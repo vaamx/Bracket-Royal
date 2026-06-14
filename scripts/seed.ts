@@ -13,7 +13,8 @@ if (!url || !serviceKey) {
 }
 const admin = createClient(url, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
-  realtime: { transport: ws },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  realtime: { transport: ws as any },
 });
 
 // Tournament opens 2026-06-11; each matchday is 4 days apart (fixture timing only).
