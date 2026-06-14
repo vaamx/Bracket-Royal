@@ -1,7 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-/** Refresh the Supabase session cookie on each request and gate app routes. */
+/**
+ * Refresh the Supabase session on each request. Sign-in is OPTIONAL: if a visitor
+ * has no session yet, we silently create an anonymous one so they can predict
+ * immediately (and their picks are saved under RLS). Signing in later upgrades
+ * that same anonymous account. No route is gated behind a login.
+ */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -28,18 +33,15 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-  const isProtected = path.startsWith("/onboarding") || path.startsWith("/leagues");
-
-  if (!user && isProtected) {
-    const redirect = request.nextUrl.clone();
-    redirect.pathname = "/login";
-    return NextResponse.redirect(redirect);
-  }
-  if (user && path.startsWith("/login")) {
-    const redirect = request.nextUrl.clone();
-    redirect.pathname = "/leagues";
-    return NextResponse.redirect(redirect);
+  // No session yet → create an anonymous one so the app is usable without sign-in.
+  // The signInAnonymously call writes auth cookies onto `response` via setAll.
+  if (!user) {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      // Anonymous sign-in unavailable (e.g. rate limit) — continue unauthenticated;
+      // pages render read-only and saving is deferred until a session exists.
+      console.error("Anonymous sign-in failed:", error.message);
+    }
   }
 
   return response;
