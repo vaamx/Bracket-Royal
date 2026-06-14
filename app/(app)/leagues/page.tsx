@@ -20,7 +20,7 @@ export default async function LeaguesPage() {
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs tracking-[2px] text-[var(--bn-accent)] font-bold">YOUR LEAGUES</p>
-          <h1 className="text-2xl font-black">Hi, {profile.display_name}</h1>
+          <h1 className="text-2xl font-black">Hi, {profile.display_name ?? "Player"}</h1>
         </div>
         <form action={signOut}>
           <Button variant="ghost">Sign out</Button>
