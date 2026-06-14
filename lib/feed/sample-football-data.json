@@ -1,0 +1,20 @@
+{
+  "matches": [
+    {
+      "id": 537331,
+      "status": "FINISHED",
+      "matchday": 1,
+      "homeTeam": { "tla": "MEX" },
+      "awayTeam": { "tla": "BEL" },
+      "score": { "fullTime": { "home": 2, "away": 1 } }
+    },
+    {
+      "id": 537332,
+      "status": "SCHEDULED",
+      "matchday": 1,
+      "homeTeam": { "tla": "SCO" },
+      "awayTeam": { "tla": "JOR" },
+      "score": { "fullTime": { "home": null, "away": null } }
+    }
+  ]
+}
