@@ -51,15 +51,17 @@ export default async function LeaguesPage() {
 
       <section className="space-y-3">
         {leagues.map((l) => (
-          <Card key={l.id} className="flex items-center justify-between">
-            <div>
-              <p className="font-bold">{l.name}</p>
-              {!l.is_global && (
-                <p className="text-xs text-white/50">Invite code: <span className="font-mono text-[var(--bn-gold)]">{l.invite_code}</span></p>
-              )}
-            </div>
-            {l.is_global && <span className="text-xs text-white/50">Everyone</span>}
-          </Card>
+          <Link key={l.id} href={`/leagues/${l.id}`} className="block">
+            <Card className="flex items-center justify-between transition-colors hover:bg-white/[0.06]">
+              <div>
+                <p className="font-bold">{l.name}</p>
+                {!l.is_global && (
+                  <p className="text-xs text-white/50">Invite code: <span className="font-mono text-[var(--bn-gold)]">{l.invite_code}</span></p>
+                )}
+              </div>
+              <span className="text-white/40">›</span>
+            </Card>
+          </Link>
         ))}
       </section>
 
