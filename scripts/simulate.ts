@@ -2,17 +2,18 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import ws from "ws";
+// Node 20 lacks native WebSocket; polyfill it before @supabase/supabase-js initialises.
+if (typeof globalThis.WebSocket === "undefined") {
+  // @ts-expect-error -- ws constructor is compatible enough for Supabase's RealtimeClient.
+  globalThis.WebSocket = ws;
+}
 import { createClient } from "@supabase/supabase-js";
 import { applyResults, runScoring } from "../lib/scoring/run";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !serviceKey) throw new Error("Missing Supabase env in .env.local");
-// Node 20 lacks native WebSocket; supply the ws polyfill via the transport option.
-const admin = createClient(url, serviceKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-  realtime: { transport: ws },
-});
+const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
 function randomScore(): number {
   const r = Math.random();
