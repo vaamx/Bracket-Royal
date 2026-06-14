@@ -26,7 +26,11 @@ export async function getLeaderboard(leagueId: string): Promise<{ league: League
     .from("league_standings")
     .select("user_id, points, rank, exact_count, profiles(display_name)")
     .eq("league_id", leagueId)
-    .order("points", { ascending: false });
+    // Stable order: points, then exacts, then a deterministic id tiebreak — so the
+    // SSR render and realtime refetches agree (no row jitter on ties).
+    .order("points", { ascending: false })
+    .order("exact_count", { ascending: false })
+    .order("user_id", { ascending: true });
 
   const rows: StandingRow[] = (standings ?? []).map((s) => ({
     userId: s.user_id,

@@ -16,10 +16,16 @@ export async function GET(request: Request) {
   if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const admin = createAdminClient();
-  const provider = footballDataProvider(() => null);
-  const results = await provider.fetchFinishedResults();
-  const applied = await applyResults(admin, results);
-  const scored = applied > 0 ? await runScoring(admin) : { leagues: 0, rows: 0 };
-  return NextResponse.json({ provider: provider.name, applied, ...scored });
+  try {
+    const admin = createAdminClient();
+    const provider = footballDataProvider(() => null);
+    const results = await provider.fetchFinishedResults();
+    const applied = await applyResults(admin, results);
+    const scored = applied > 0 ? await runScoring(admin) : { leagues: 0, rows: 0 };
+    return NextResponse.json({ provider: provider.name, applied, ...scored });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "poll failed";
+    console.error("poll-results failed:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

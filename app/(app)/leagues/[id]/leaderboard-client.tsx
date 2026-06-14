@@ -21,7 +21,9 @@ export function LeaderboardClient({ leagueId, initialRows }: { leagueId: string;
             .from("league_standings")
             .select("user_id, points, rank, exact_count, profiles(display_name)")
             .eq("league_id", leagueId)
-            .order("points", { ascending: false });
+            .order("points", { ascending: false })
+            .order("exact_count", { ascending: false })
+            .order("user_id", { ascending: true });
           if (data) {
             setRows(
               data.map((s) => ({
