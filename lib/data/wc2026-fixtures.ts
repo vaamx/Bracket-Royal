@@ -20,7 +20,7 @@ export const FIXTURE_GROUPS: FixtureGroup[] = [
   { label: "A", teams: [
     { id: "MEX", name: "Mexico", flag: "🇲🇽", fifaRank: 15 },
     { id: "BEL", name: "Belgium", flag: "🇧🇪", fifaRank: 6 },
-    { id: "SCO", name: "Scotland", flag: "🏴", fifaRank: 39 },
+    { id: "SCO", name: "Scotland", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", fifaRank: 39 },
     { id: "JOR", name: "Jordan", flag: "🇯🇴", fifaRank: 64 },
   ]},
   { label: "B", teams: [
@@ -66,7 +66,7 @@ export const FIXTURE_GROUPS: FixtureGroup[] = [
     { id: "CIV", name: "Côte d'Ivoire", flag: "🇨🇮", fifaRank: 45 },
   ]},
   { label: "I", teams: [
-    { id: "ENG", name: "England", flag: "🏴", fifaRank: 4 },
+    { id: "ENG", name: "England", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", fifaRank: 5 },
     { id: "COL", name: "Colombia", flag: "🇨🇴", fifaRank: 14 },
     { id: "NOR", name: "Norway", flag: "🇳🇴", fifaRank: 38 },
     { id: "QAT", name: "Qatar", flag: "🇶🇦", fifaRank: 51 },
@@ -81,7 +81,7 @@ export const FIXTURE_GROUPS: FixtureGroup[] = [
     { id: "ITA", name: "Italy", flag: "🇮🇹", fifaRank: 8 },
     { id: "AUT", name: "Austria", flag: "🇦🇹", fifaRank: 24 },
     { id: "GHA", name: "Ghana", flag: "🇬🇭", fifaRank: 47 },
-    { id: "NZL2", name: "Curaçao", flag: "🇨🇼", fifaRank: 82 },
+    { id: "CUW", name: "Curaçao", flag: "🇨🇼", fifaRank: 82 },
   ]},
   { label: "L", teams: [
     { id: "COD", name: "DR Congo", flag: "🇨🇩", fifaRank: 56 },
