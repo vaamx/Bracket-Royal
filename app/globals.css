@@ -26,5 +26,5 @@ body {
     radial-gradient(1200px 600px at 50% -10%, #0f1d3a 0%, var(--bn-bg) 55%, var(--bn-bg-deep) 100%);
   color: var(--bn-text);
   min-height: 100dvh;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, Arial, Helvetica, sans-serif;
 }
