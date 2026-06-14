@@ -4,10 +4,12 @@ A mobile-first PWA where friends predict every FIFA World Cup 2026 match, build 
 full knockout bracket, and compete on a live leaderboard. Predictions are scored
 against real match results. Aesthetic: "Broadcast Night" (deep navy + gold).
 
-> **Status:** Phase 1 — Foundation. This branch contains the app scaffold, the
-> Broadcast Night design system, the tested competition-math module, and the
-> Supabase schema. Auth, the prediction UI, the live results feed/scoring, and the
-> bracket UI are built in subsequent plans. See `docs/superpowers/`.
+> **Status:** Phase 1 complete (Foundation) + Phase 2 complete (Auth & Leagues).
+> Built so far: the app scaffold, Broadcast Night design system, the tested
+> competition-math module, the Supabase schema + RLS, email magic-link & Google
+> sign-in, profile provisioning, and create/join private + global leagues.
+> Still to come: the prediction UI, live results feed/scoring, and the bracket UI.
+> See `docs/superpowers/`.
 
 ## Stack
 
@@ -47,20 +49,31 @@ npm run dev          # http://localhost:3000
 |---|---|
 | `npm run dev` | Start the Next.js dev server |
 | `npm run build` | Production build |
-| `npm test` | Run the Vitest unit suite (competition math) |
+| `npm test` | Run the Vitest unit suite (Docker-free: competition math + invite codes) |
 | `npm run test:watch` | Vitest in watch mode |
+| `npm run test:integration` | RLS/auth integration tests against the running local Supabase stack |
 | `npm run lint` | ESLint |
+
+> **Auth note:** email magic-link works locally out of the box — submitted links land in
+> Mailpit at `http://127.0.0.1:54324`. Google sign-in activates only when optional
+> `GOOGLE_CLIENT_ID`/`GOOGLE_SECRET` are set in `.env.local` (see `.env.local.example`).
+> Apple is a documented config stub (needs a paid Apple Developer account).
 
 ## Project layout
 
 ```
-app/                  Next.js App Router pages + global styles
-components/ui/         Reusable UI primitives (Card, Button)
+app/(auth)/login/      Sign-in screen (Google + email magic link)
+app/(app)/leagues/     Leagues list + create/join + server actions
+app/(app)/onboarding/  Display-name step
+app/auth/callback/     OAuth/OTP code-exchange route
+proxy.ts               Edge middleware (Next 16 convention): session refresh + route gating
+components/ui/          Reusable UI primitives (Card, Button, Input)
 lib/design/            Broadcast Night design tokens
 lib/math/              Pure, tested competition math (standings, tiebreakers,
                        third-place ranking, prediction scoring) — no DB deps
-lib/supabase/          Browser + server Supabase client helpers
-supabase/              CLI config, schema migrations, dev seed
+lib/leagues/           Invite-code generator + league queries
+lib/supabase/          Browser + server + service-role client helpers
+supabase/              CLI config, schema migrations (0001 schema, 0002 auth/RLS), dev seed
 docs/superpowers/      Design spec + implementation plans
 ```
 
