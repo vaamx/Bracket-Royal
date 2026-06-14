@@ -52,10 +52,13 @@ $$;
 -- hold table GRANTs; without these, every API query is denied at the privilege
 -- layer (error 42501) before any policy is evaluated. The tables in 0001 were
 -- created without DML grants for the Supabase API roles, so grant them here.
-grant select, insert, update, delete on all tables in schema public
-  to anon, authenticated, service_role;
-grant usage, select on all sequences in schema public
-  to anon, authenticated, service_role;
+-- Least-privilege: grant only what some RLS policy can actually permit. anon never
+-- writes (no anon write policy exists); authenticated needs select/insert/update but
+-- no policy ever permits delete; service_role bypasses RLS and gets everything.
+grant select on all tables in schema public to anon;
+grant select, insert, update on all tables in schema public to authenticated;
+grant all on all tables in schema public to service_role;
+grant usage, select on all sequences in schema public to authenticated, service_role;
 
 -- 5. RLS policies.
 
