@@ -30,3 +30,34 @@ describe("computeGroupStandings — base accumulation", () => {
     expect(table.map((r) => r.teamId)).toEqual(["A", "B", "C", "D"]);
   });
 });
+
+describe("computeGroupStandings — tiebreakers", () => {
+  it("breaks a points tie by head-to-head result first", () => {
+    const m: PlayedMatch[] = [
+      { homeTeamId: "X", awayTeamId: "Y", homeScore: 0, awayScore: 1 },
+      { homeTeamId: "X", awayTeamId: "Z", homeScore: 2, awayScore: 1 },
+      { homeTeamId: "Y", awayTeamId: "Z", homeScore: 1, awayScore: 2 },
+    ];
+    const table = computeGroupStandings(m);
+    const order = table.map((r) => r.teamId);
+    expect(order[0]).toBe("Z");
+    expect(order.indexOf("Y")).toBeLessThan(order.indexOf("X"));
+  });
+  it("falls back to overall goal difference when head-to-head is level", () => {
+    const m: PlayedMatch[] = [
+      { homeTeamId: "P", awayTeamId: "R", homeScore: 1, awayScore: 0 },
+      { homeTeamId: "Q", awayTeamId: "R", homeScore: 3, awayScore: 0 },
+      { homeTeamId: "P", awayTeamId: "Q", homeScore: 1, awayScore: 1 },
+    ];
+    const table = computeGroupStandings(m);
+    const order = table.map((r) => r.teamId);
+    expect(order.indexOf("Q")).toBeLessThan(order.indexOf("P"));
+  });
+  it("uses FIFA rank as the final tiebreaker when all else is equal", () => {
+    const m: PlayedMatch[] = [
+      { homeTeamId: "L", awayTeamId: "H", homeScore: 0, awayScore: 0 },
+    ];
+    const table = computeGroupStandings(m, { fifaRank: { L: 3, H: 20 } });
+    expect(table.map((r) => r.teamId)).toEqual(["L", "H"]);
+  });
+});
