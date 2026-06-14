@@ -6,7 +6,9 @@ import { PredictClient } from "./predict-client";
 export default async function PredictPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // Sign-in is optional; the proxy auto-creates an anonymous session. If one
+  // genuinely isn't available, send to the welcome rather than a login wall.
+  if (!user) redirect("/");
 
   const groups = await getGroupsForPrediction();
   if (groups.length === 0) {

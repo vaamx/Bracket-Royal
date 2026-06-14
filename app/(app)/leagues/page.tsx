@@ -1,31 +1,47 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { getMyLeagues, getSessionProfile } from "@/lib/leagues/queries";
-import { createLeague, joinLeague, signOut } from "./actions";
+import { createLeagueForm, joinLeagueForm, signOut } from "./actions";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { redirect } from "next/navigation";
-
-// Next 16 form `action` requires (formData: FormData) => void | Promise<void>.
-// These wrappers discard the return value so the signature matches.
-async function createLeagueAction(formData: FormData) { await createLeague(formData); }
-async function joinLeagueAction(formData: FormData) { await joinLeague(formData); }
 
 export default async function LeaguesPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/"); // sign-in is optional; no session at all → welcome
+
+  const isAnonymous = user.is_anonymous === true;
   const profile = await getSessionProfile();
-  if (!profile) redirect("/login");
   const leagues = await getMyLeagues();
+  const displayName = profile?.display_name ?? (isAnonymous ? "Guest" : "Player");
 
   return (
     <main className="mx-auto max-w-md p-6 space-y-6">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs tracking-[2px] text-[var(--bn-accent)] font-bold">YOUR LEAGUES</p>
-          <h1 className="text-2xl font-black">Hi, {profile.display_name ?? "Player"}</h1>
+          <h1 className="text-2xl font-black">Hi, {displayName}</h1>
         </div>
-        <form action={signOut}>
-          <Button variant="ghost">Sign out</Button>
-        </form>
+        {isAnonymous ? (
+          <Link href="/login">
+            <Button>Sign in</Button>
+          </Link>
+        ) : (
+          <form action={signOut}>
+            <Button variant="ghost">Sign out</Button>
+          </form>
+        )}
       </header>
+
+      {isAnonymous && (
+        <Link href="/login" className="block">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-center text-sm text-white/60">
+            You&apos;re playing as a guest — <span className="font-semibold text-[var(--bn-gold)]">sign in to save your picks &amp; leagues</span>
+          </div>
+        </Link>
+      )}
 
       <a href="/predict" className="block">
         <div className="rounded-2xl border border-[var(--bn-gold)]/30 bg-[var(--bn-gold)]/10 p-4 text-center font-extrabold text-[var(--bn-gold)]">
@@ -49,7 +65,7 @@ export default async function LeaguesPage() {
 
       <Card className="space-y-3">
         <h2 className="font-bold">Create a league</h2>
-        <form action={createLeagueAction} className="flex gap-2">
+        <form action={createLeagueForm} className="flex gap-2">
           <Input name="name" placeholder="League name" required />
           <Button type="submit">Create</Button>
         </form>
@@ -57,7 +73,7 @@ export default async function LeaguesPage() {
 
       <Card className="space-y-3">
         <h2 className="font-bold">Join a league</h2>
-        <form action={joinLeagueAction} className="flex gap-2">
+        <form action={joinLeagueForm} className="flex gap-2">
           <Input name="code" placeholder="Invite code" className="font-mono uppercase" required />
           <Button type="submit" variant="ghost">Join</Button>
         </form>

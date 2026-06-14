@@ -5,6 +5,18 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { generateInviteCode } from "@/lib/leagues/inviteCode";
 
+/**
+ * Void-returning form-action wrappers. Next 16 requires a `<form action>` to be a
+ * server action returning void; these live here (in the "use server" module) so
+ * they are real server actions, not plain functions captured in a page component.
+ */
+export async function createLeagueForm(formData: FormData): Promise<void> {
+  await createLeague(formData);
+}
+export async function joinLeagueForm(formData: FormData): Promise<void> {
+  await joinLeague(formData);
+}
+
 export async function setDisplayName(formData: FormData) {
   const name = String(formData.get("display_name") ?? "").trim();
   if (!name) return { error: "Name is required" };
