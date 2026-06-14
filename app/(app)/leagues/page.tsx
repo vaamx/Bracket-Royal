@@ -27,6 +27,12 @@ export default async function LeaguesPage() {
         </form>
       </header>
 
+      <a href="/predict" className="block">
+        <div className="rounded-2xl border border-[var(--bn-gold)]/30 bg-[var(--bn-gold)]/10 p-4 text-center font-extrabold text-[var(--bn-gold)]">
+          ⚽ Make your group predictions →
+        </div>
+      </a>
+
       <section className="space-y-3">
         {leagues.map((l) => (
           <Card key={l.id} className="flex items-center justify-between">
