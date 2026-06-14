@@ -1,23 +1,32 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useMemo } from "react";
 import { predictedStandings } from "@/lib/predictions/toStandings";
 import { PredictedTable } from "@/components/predict/PredictedTable";
 import { MatchRow } from "@/components/predict/MatchRow";
 import type { PredictGroup, PredictMatch } from "@/lib/predictions/types";
 
-function isLocked(m: PredictMatch): boolean {
+export function isLocked(m: PredictMatch): boolean {
   if (m.status === "final" || m.status === "live") return true;
   return m.lockAt !== null && new Date(m.lockAt).getTime() <= Date.now();
 }
 
-export function GroupPredictor({ group, userId }: { group: PredictGroup; userId: string }) {
-  const supabase = useMemo(() => createClient(), []);
-  const [matches, setMatches] = useState<PredictMatch[]>(group.matches);
-  const [saving, setSaving] = useState(false);
-  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
+/**
+ * Controlled view of one group: the live predicted table + its match rows.
+ * Match state and saving live in the parent (PredictClient) so the stepper's
+ * progress reflects edits live; this component just renders and reports scores up.
+ */
+export function GroupPredictor({
+  group,
+  saving,
+  saveFailed,
+  onScore,
+}: {
+  group: PredictGroup;
+  saving: boolean;
+  saveFailed: boolean;
+  onScore: (matchId: string, side: "home" | "away", value: number | null) => void;
+}) {
   const teamsById = useMemo(
     () => Object.fromEntries(group.teams.map((t) => [t.id, t])),
     [group.teams]
@@ -27,52 +36,21 @@ export function GroupPredictor({ group, userId }: { group: PredictGroup; userId:
     () =>
       predictedStandings(
         group.teams.map((t) => ({ id: t.id, fifaRank: t.fifaRank })),
-        matches.map((m) => ({
+        group.matches.map((m) => ({
           home_team_id: m.homeTeamId,
           away_team_id: m.awayTeamId,
           predicted_home: m.predictedHome,
           predicted_away: m.predictedAway,
         }))
       ),
-    [matches, group.teams]
+    [group.matches, group.teams]
   );
-
-  function scheduleSave(match: PredictMatch) {
-    clearTimeout(timers.current[match.id]);
-    timers.current[match.id] = setTimeout(async () => {
-      if (match.predictedHome === null || match.predictedAway === null) return;
-      setSaving(true);
-      await supabase.from("predictions").upsert(
-        {
-          user_id: userId,
-          match_id: match.id,
-          predicted_home: match.predictedHome,
-          predicted_away: match.predictedAway,
-        },
-        { onConflict: "user_id,match_id" }
-      );
-      setSaving(false);
-    }, 600);
-  }
-
-  function onScore(matchId: string, side: "home" | "away", value: number | null) {
-    setMatches((prev) => {
-      const next = prev.map((m) =>
-        m.id === matchId
-          ? { ...m, predictedHome: side === "home" ? value : m.predictedHome, predictedAway: side === "away" ? value : m.predictedAway }
-          : m
-      );
-      const updated = next.find((m) => m.id === matchId)!;
-      scheduleSave(updated);
-      return next;
-    });
-  }
 
   return (
     <div className="space-y-4">
       <PredictedTable rows={standings} teamsById={teamsById} />
       <div className="space-y-2">
-        {matches.map((m) => (
+        {group.matches.map((m) => (
           <MatchRow
             key={m.id}
             match={m}
@@ -83,7 +61,9 @@ export function GroupPredictor({ group, userId }: { group: PredictGroup; userId:
           />
         ))}
       </div>
-      <p className="h-4 text-right text-xs text-white/40">{saving ? "Saving…" : "All changes saved"}</p>
+      <p className={"h-4 text-right text-xs " + (saveFailed ? "text-red-400" : "text-white/40")}>
+        {saveFailed ? "Couldn't save — check your connection" : saving ? "Saving…" : "All changes saved"}
+      </p>
     </div>
   );
 }
