@@ -41,7 +41,7 @@ async function main() {
     buildGroupMatches(g.label, g.teams.map((t) => t.id)).map((m) => {
       const kickoff = kickoffFor(gi, m.matchday);
       return {
-        id: m.id, stage: m.stage, group_label: m.group_label,
+        id: m.id, stage: m.stage, group_label: m.group_label, matchday: m.matchday,
         home_team_id: m.home_team_id, away_team_id: m.away_team_id,
         kickoff_at: kickoff, lock_at: kickoff, status: "scheduled" as const,
       };
