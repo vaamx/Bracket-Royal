@@ -35,7 +35,9 @@ export async function updateSession(request: NextRequest) {
 
   // No session yet → create an anonymous one so the app is usable without sign-in.
   // The signInAnonymously call writes auth cookies onto `response` via setAll.
-  if (!user) {
+  // Skip on /auth/* (the OAuth/email callback): it sets the real session itself,
+  // so minting an anon user there would just create a throwaway account.
+  if (!user && !request.nextUrl.pathname.startsWith("/auth")) {
     const { error } = await supabase.auth.signInAnonymously();
     if (error) {
       // Anonymous sign-in unavailable (e.g. rate limit) — continue unauthenticated;
