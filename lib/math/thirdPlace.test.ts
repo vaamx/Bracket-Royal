@@ -28,4 +28,10 @@ describe("rankThirdPlaceTeams", () => {
     const best = rankThirdPlaceTeams([a, b]);
     expect(best.map((r) => r.teamId)).toEqual(["B", "A"]);
   });
+  it("breaks an otherwise-identical tie by conduct score (fewer cards ranks higher)", () => {
+    const a = row("A", 3, 0, 2); a.conduct = 3;
+    const b = row("B", 3, 0, 2); b.conduct = 1;
+    const best = rankThirdPlaceTeams([a, b]);
+    expect(best.map((r) => r.teamId)).toEqual(["B", "A"]);
+  });
 });

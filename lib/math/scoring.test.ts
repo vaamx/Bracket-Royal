@@ -19,3 +19,13 @@ describe("scorePrediction (default config 5/3/2/0)", () => {
   it("treats an exact draw as exact, not goalDiff", () => { expect(scorePrediction({ home: 1, away: 1 }, { home: 1, away: 1 }, cfg)).toBe(5); });
   it("awards outcome (not goalDiff) for a non-exact draw", () => { expect(scorePrediction({ home: 0, away: 0 }, { home: 2, away: 2 }, cfg)).toBe(2); });
 });
+
+describe("scorePrediction (honors a custom league config)", () => {
+  const custom = { exact: 10, goalDiff: 6, outcome: 3 };
+  it("reads point values from config, not hardcoded defaults", () => {
+    expect(scorePrediction({ home: 2, away: 1 }, { home: 2, away: 1 }, custom)).toBe(10);
+    expect(scorePrediction({ home: 2, away: 1 }, { home: 3, away: 2 }, custom)).toBe(6);
+    expect(scorePrediction({ home: 1, away: 0 }, { home: 3, away: 0 }, custom)).toBe(3);
+    expect(scorePrediction({ home: 2, away: 1 }, { home: 0, away: 1 }, custom)).toBe(0);
+  });
+});

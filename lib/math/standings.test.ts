@@ -60,4 +60,24 @@ describe("computeGroupStandings — tiebreakers", () => {
     const table = computeGroupStandings(m, { fifaRank: { L: 3, H: 20 } });
     expect(table.map((r) => r.teamId)).toEqual(["L", "H"]);
   });
+  it("breaks an otherwise-identical tie by conduct score (fewer cards ranks higher)", () => {
+    const m: PlayedMatch[] = [
+      { homeTeamId: "A", awayTeamId: "B", homeScore: 0, awayScore: 0 },
+    ];
+    // A has the worse conduct score (2) than B (0); everything else is equal.
+    const table = computeGroupStandings(m, { conduct: { A: 2, B: 0 } });
+    expect(table.map((r) => r.teamId)).toEqual(["B", "A"]);
+  });
+  it("returns all teams without hanging when a subset is genuinely, fully tied", () => {
+    // Three teams draw each other 0-0: identical on every criterion, no ranks.
+    // Exercises the recursion's termination branch (run not strictly smaller).
+    const m: PlayedMatch[] = [
+      { homeTeamId: "A", awayTeamId: "B", homeScore: 0, awayScore: 0 },
+      { homeTeamId: "A", awayTeamId: "C", homeScore: 0, awayScore: 0 },
+      { homeTeamId: "B", awayTeamId: "C", homeScore: 0, awayScore: 0 },
+    ];
+    const table = computeGroupStandings(m);
+    expect(table).toHaveLength(3);
+    expect([...table.map((r) => r.teamId)].sort()).toEqual(["A", "B", "C"]);
+  });
 });
