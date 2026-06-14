@@ -48,7 +48,16 @@ as $$
   );
 $$;
 
--- 4. RLS policies.
+-- 4. Base table privileges. RLS only *narrows* access for roles that already
+-- hold table GRANTs; without these, every API query is denied at the privilege
+-- layer (error 42501) before any policy is evaluated. The tables in 0001 were
+-- created without DML grants for the Supabase API roles, so grant them here.
+grant select, insert, update, delete on all tables in schema public
+  to anon, authenticated, service_role;
+grant usage, select on all sequences in schema public
+  to anon, authenticated, service_role;
+
+-- 5. RLS policies.
 
 -- profiles: any authenticated user can read profiles (needed for leaderboards);
 -- a user may update only their own. Inserts happen via the trigger (definer).
@@ -58,10 +67,12 @@ create policy "profiles updatable by owner"
   on public.profiles for update to authenticated
   using (auth.uid() = id) with check (auth.uid() = id);
 
--- leagues: visible if global or you're a member; create as yourself; owner updates.
+-- leagues: visible if global, you own it, or you're a member; create as
+-- yourself; owner updates. (The owner clause lets a creator read their league
+-- back immediately on insert-returning, before the league_members row exists.)
 create policy "leagues visible to members or global"
   on public.leagues for select to authenticated
-  using (is_global or public.is_member(id));
+  using (is_global or owner_id = auth.uid() or public.is_member(id));
 create policy "leagues created by owner"
   on public.leagues for insert to authenticated
   with check (owner_id = auth.uid());
@@ -112,7 +123,7 @@ create policy "own predictions updatable before lock"
     )
   );
 
--- 5. Join-by-code RPC: looks up a league by code without exposing it via RLS,
+-- 6. Join-by-code RPC: looks up a league by code without exposing it via RLS,
 -- then adds the caller as a member. Returns the joined league.
 create or replace function public.join_league_by_code(p_code text)
 returns public.leagues
