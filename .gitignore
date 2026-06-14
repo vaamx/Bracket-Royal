@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Env & secrets
+.env
+.env*.local
+.env.local
+
+# Supabase
+**/supabase/.branches
+**/supabase/.temp
+
+# Vercel
+.vercel
+
+# Brainstorm companion (visual mockups, not source)
+.superpowers/
+
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
