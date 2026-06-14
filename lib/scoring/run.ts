@@ -96,7 +96,7 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
     scored.sort((a, b) => b.points - a.points);
     const ranked = scored.map((s, i) => ({
       ...s,
-      rank: i > 0 && scored[i - 1].points === s.points ? (scoredRank(scored, i)) : i + 1,
+      rank: scoredRank(scored, i), // standard competition rank (ties share a rank)
       updated_at: now,
     }));
 

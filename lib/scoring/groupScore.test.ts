@@ -98,4 +98,25 @@ describe("scoreUserGroupStage", () => {
     );
     expect(res.points - noBonus.points).toBeGreaterThanOrEqual(cfg.qualTop2 * 2);
   });
+
+  it("awards NO group bonus to a user who predicted nothing in the group", () => {
+    // Regression: predictedStandings([]) falls back to FIFA-rank order, which
+    // matches the favorites — a non-participant must NOT collect free bonuses.
+    const matches = groupX(true); // complete group, favorites (A,B) finish top-2
+    expect(scoreUserGroupStage([], matches, teams, cfg).points).toBe(0);
+  });
+
+  it("scores a perfect predictor as exact match points + full bonuses", () => {
+    const matches = groupX(true);
+    // Predict every scoreline exactly → 6×exact(5)=30 match pts, exactCount 6,
+    // predicted table == actual → winner(+3) + both top-2(+2+2). Total 30+7=37.
+    const perfect: ScoringPrediction[] = matches.map((m) => ({
+      match_id: m.id,
+      predicted_home: m.home_score,
+      predicted_away: m.away_score,
+    }));
+    const res = scoreUserGroupStage(perfect, matches, teams, cfg);
+    expect(res.exactCount).toBe(6);
+    expect(res.points).toBe(6 * cfg.exact + cfg.qualWinner + cfg.qualTop2 * 2); // 30 + 3 + 4 = 37
+  });
 });

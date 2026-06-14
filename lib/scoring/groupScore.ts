@@ -45,6 +45,14 @@ export function scoreUserGroupStage(
   for (const g of groupLabels) {
     const groupMatches = matches.filter((m) => m.group_label === g);
     if (groupMatches.length === 0 || !groupMatches.every(isFinal)) continue;
+    // Only award group bonuses if the user actually predicted in this group —
+    // otherwise predictedStandings falls back to FIFA-rank order and a
+    // non-participant would collect bonuses for free when the favorites win.
+    const predictedAny = groupMatches.some((m) => {
+      const p = predByMatch.get(m.id);
+      return p != null && p.predicted_home !== null && p.predicted_away !== null;
+    });
+    if (!predictedAny) continue;
     const groupTeams = teams.filter((t) => t.group_label === g);
     const fifaRank = Object.fromEntries(groupTeams.map((t) => [t.id, t.fifaRank]));
 
