@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { applyResults, runScoring, resolveAndAdvance } from "@/lib/scoring/run";
+import { applyResults, resolveAndAdvance } from "@/lib/scoring/run";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
