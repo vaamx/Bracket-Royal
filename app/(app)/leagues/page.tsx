@@ -49,6 +49,12 @@ export default async function LeaguesPage() {
         </div>
       </a>
 
+      <a href="/bracket" className="block">
+        <div className="rounded-2xl border border-[var(--bn-accent)]/30 bg-[var(--bn-accent)]/10 p-4 text-center font-extrabold text-[var(--bn-accent)]">
+          🗺️ Build your knockout bracket →
+        </div>
+      </a>
+
       <section className="space-y-3">
         {leagues.map((l) => (
           <Link key={l.id} href={`/leagues/${l.id}`} className="block">
