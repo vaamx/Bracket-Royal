@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { footballDataProvider } from "@/lib/feed/footballData";
-import { applyResults, runScoring } from "@/lib/scoring/run";
+import { applyResults, runScoring, resolveAndAdvance } from "@/lib/scoring/run";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +21,7 @@ export async function GET(request: Request) {
     const provider = footballDataProvider(() => null);
     const results = await provider.fetchFinishedResults();
     const applied = await applyResults(admin, results);
+    await resolveAndAdvance(admin);
     const scored = applied > 0 ? await runScoring(admin) : { leagues: 0, rows: 0 };
     return NextResponse.json({ provider: provider.name, applied, ...scored });
   } catch (e) {
