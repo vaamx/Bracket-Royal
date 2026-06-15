@@ -7,6 +7,7 @@ import { stageMatchIds } from "@/lib/bracket/structure";
 import { TieCard } from "@/components/bracket/TieCard";
 import { RoundStepper } from "@/components/bracket/RoundStepper";
 import type { BracketData } from "@/lib/bracket/queries";
+import { useCelebration } from "@/lib/celebrate/useCelebration";
 
 type Stage = BracketData["matches"][number]["stage"];
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -30,6 +31,7 @@ function lockedById(matches: BracketData["matches"]): Record<string, boolean> {
 
 export function BracketClient({ data }: { data: BracketData }) {
   const supabase = useMemo(() => createClient(), []);
+  const celebrate = useCelebration();
   const [picks, setPicks] = useState<Record<string, string>>(data.picks);
   const [round, setRound] = useState(0);
   const [status, setStatus] = useState<SaveStatus>("idle");
@@ -55,6 +57,7 @@ export function BracketClient({ data }: { data: BracketData }) {
     const { validPicks: pruned } = buildBracketView(data.r32, { ...base, [matchId]: teamId });
     picksRef.current = pruned;
     setPicks(pruned);
+    if (matchId === "F-1") celebrate("big");
     setStatus("saving");
 
     const removed = Object.keys(base).filter((id) => id !== matchId && !(id in pruned));
