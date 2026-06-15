@@ -11,6 +11,11 @@ export default defineConfig({
     setupFiles: ["./vitest.integration.setup.ts"],
     testTimeout: 20000,
     hookTimeout: 20000,
+    // Integration tests share one live Supabase DB; run files sequentially in a
+    // single worker so global preconditions (e.g. "all group matches final" for
+    // bracket resolution) aren't disturbed by another file's concurrent writes.
+    fileParallelism: false,
+    poolOptions: { forks: { singleFork: true } },
   },
   resolve: { alias: { "@": path.resolve(__dirname, ".") } },
 });

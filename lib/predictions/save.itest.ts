@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -33,6 +33,13 @@ describe("prediction writes respect the lock (integration)", () => {
       { id: lockedId, stage: "group", group_label: "A", home_team_id: "SCO", away_team_id: "JOR", kickoff_at: past, lock_at: past, status: "scheduled" },
     ]);
     if (error) throw error;
+  });
+
+  afterAll(async () => {
+    // Remove this test's scheduled group matches so they don't disturb other
+    // integration files (e.g. bracket resolution needs every group match final).
+    await admin.from("predictions").delete().in("match_id", [openId, lockedId]);
+    await admin.from("matches").delete().in("id", [openId, lockedId]);
   });
 
   it("allows a prediction on an unlocked match", async () => {
