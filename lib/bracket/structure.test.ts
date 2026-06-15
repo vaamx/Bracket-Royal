@@ -39,4 +39,19 @@ describe("knockout structure", () => {
     const sf = KNOCKOUT_MATCHES.filter((m) => m.stage === "sf");
     expect(sf.every((m) => m.loserTo?.matchId === "3RD-1")).toBe(true);
   });
+
+  it("is a valid bracket: every downstream slot is fed exactly once (no collisions, no orphans)", () => {
+    // Collect every (matchId, side) feed from winners + semifinal losers.
+    const feeds: string[] = [];
+    for (const m of KNOCKOUT_MATCHES) {
+      if (m.winnerTo) feeds.push(`${m.winnerTo.matchId}:${m.winnerTo.side}`);
+      if (m.loserTo) feeds.push(`${m.loserTo.matchId}:${m.loserTo.side}`);
+    }
+    // No slot is fed twice.
+    expect(new Set(feeds).size).toBe(feeds.length);
+    // Every non-R32 match's two slots (home+away) are both fed: R16(8)+QF(4)+SF(2)+F(1)+3RD(1) = 16 matches × 2 = 32.
+    const downstream = KNOCKOUT_MATCHES.filter((m) => m.stage !== "r32");
+    const expected = downstream.flatMap((m) => [`${m.id}:home`, `${m.id}:away`]).sort();
+    expect([...feeds].sort()).toEqual(expected);
+  });
 });

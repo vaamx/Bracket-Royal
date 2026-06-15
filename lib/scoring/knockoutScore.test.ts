@@ -47,4 +47,13 @@ describe("scoreUserKnockout", () => {
     });
     expect(points).toBe(cfg.ko.r32 + cfg.ko.r16 + cfg.ko.qf + cfg.ko.sf + cfg.ko.champion);
   });
+
+  it("does not inflate when a team appears twice in a predicted set (malformed input)", () => {
+    const { points } = scoreUserKnockout({
+      predictedWinnersByStage: { r32: ["A", "A"], r16: [], qf: [], sf: [], final: [] },
+      actualWinnersByStage: { r32: ["A"], r16: [], qf: [], sf: [], final: [] },
+      predictedThirds: [], actualThirds: [], config: cfg,
+    });
+    expect(points).toBe(cfg.ko.r32); // counted once, not twice
+  });
 });

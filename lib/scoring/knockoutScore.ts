@@ -16,9 +16,10 @@ export interface KnockoutScoreInput {
   config: LeagueScoringConfig;
 }
 
+/** True set-intersection size — dedupes `a` so malformed (duplicate) picks can't inflate. */
 function intersectionCount(a: string[], b: string[]): number {
   const set = new Set(b);
-  return a.filter((x) => set.has(x)).length;
+  return new Set(a.filter((x) => set.has(x))).size;
 }
 
 /**
