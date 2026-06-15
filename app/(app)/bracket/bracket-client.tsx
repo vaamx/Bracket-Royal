@@ -1,19 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { buildBracketView } from "@/lib/bracket/userBracket";
+import { stageMatchIds } from "@/lib/bracket/structure";
 import { TieCard } from "@/components/bracket/TieCard";
 import { RoundStepper } from "@/components/bracket/RoundStepper";
 import type { BracketData } from "@/lib/bracket/queries";
 
-const ROUNDS: Array<{ stage: BracketData["matches"][number]["stage"]; label: string; prefix: string; count: number }> = [
-  { stage: "r32", label: "Round of 32", prefix: "R32", count: 16 },
-  { stage: "r16", label: "Round of 16", prefix: "R16", count: 8 },
-  { stage: "qf", label: "Quarterfinals", prefix: "QF", count: 4 },
-  { stage: "sf", label: "Semifinals", prefix: "SF", count: 2 },
-  { stage: "final", label: "Final", prefix: "F", count: 1 },
+type Stage = BracketData["matches"][number]["stage"];
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+const ROUNDS: Array<{ stage: Stage; label: string; tab: string }> = [
+  { stage: "r32", label: "Round of 32", tab: "R32" },
+  { stage: "r16", label: "Round of 16", tab: "R16" },
+  { stage: "qf", label: "Quarterfinals", tab: "QF" },
+  { stage: "sf", label: "Semifinals", tab: "SF" },
+  { stage: "final", label: "Final", tab: "F" },
 ];
+const STEPPER_ROUNDS = ROUNDS.map((x) => ({ stage: x.stage, label: x.tab }));
 
 function lockedById(matches: BracketData["matches"]): Record<string, boolean> {
   const out: Record<string, boolean> = {};
@@ -27,43 +32,61 @@ export function BracketClient({ data }: { data: BracketData }) {
   const supabase = useMemo(() => createClient(), []);
   const [picks, setPicks] = useState<Record<string, string>>(data.picks);
   const [round, setRound] = useState(0);
-  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<SaveStatus>("idle");
   const locks = useMemo(() => lockedById(data.matches), [data.matches]);
+
+  // Synchronous source of truth for the latest valid picks — so rapid taps build
+  // on each other instead of a stale render snapshot.
+  const picksRef = useRef<Record<string, string>>(data.picks);
+  // Serialize DB writes so a later pick's delete can't race a prior upsert.
+  const saveChain = useRef<Promise<void>>(Promise.resolve());
 
   const { view, validPicks } = useMemo(() => buildBracketView(data.r32, picks), [data.r32, picks]);
 
-  async function onPick(matchId: string, teamId: string) {
-    if (!data.userId) return;
-    const next = { ...validPicks, [matchId]: teamId };
-    const { validPicks: pruned } = buildBracketView(data.r32, next);
-    setPicks(pruned);
+  const completedRounds = useMemo(() => {
+    const out: Record<string, boolean> = {};
+    for (const rr of ROUNDS) out[rr.stage] = stageMatchIds(rr.stage).every((id) => validPicks[id] !== undefined);
+    return out;
+  }, [validPicks]);
 
-    setSaving(true);
-    // Upsert the new pick; delete any picks the change invalidated.
-    await supabase.from("predictions").upsert(
-      { user_id: data.userId, match_id: matchId, predicted_winner_team_id: teamId },
-      { onConflict: "user_id,match_id" }
-    );
-    const removed = Object.keys(validPicks).filter((id) => id !== matchId && !(id in pruned));
-    if (removed.length > 0) {
-      await supabase.from("predictions").delete().eq("user_id", data.userId).in("match_id", removed);
-    }
-    setSaving(false);
+  function onPick(matchId: string, teamId: string) {
+    if (!data.userId) return;
+    const base = picksRef.current;
+    const { validPicks: pruned } = buildBracketView(data.r32, { ...base, [matchId]: teamId });
+    picksRef.current = pruned;
+    setPicks(pruned);
+    setStatus("saving");
+
+    const removed = Object.keys(base).filter((id) => id !== matchId && !(id in pruned));
+    const userId = data.userId;
+    saveChain.current = saveChain.current.then(async () => {
+      try {
+        const { error: upErr } = await supabase.from("predictions").upsert(
+          { user_id: userId, match_id: matchId, predicted_winner_team_id: teamId },
+          { onConflict: "user_id,match_id" }
+        );
+        if (upErr) throw upErr;
+        if (removed.length > 0) {
+          const { error: delErr } = await supabase.from("predictions").delete().eq("user_id", userId).in("match_id", removed);
+          if (delErr) throw delErr;
+        }
+        setStatus("saved");
+      } catch (e) {
+        console.error("Failed to save bracket pick", matchId, e);
+        setStatus("error");
+      }
+    });
   }
 
   const r = ROUNDS[round];
-  const matchIds = Array.from({ length: r.count }, (_, i) => `${r.prefix}-${i + 1}`);
+  const matchIds = stageMatchIds(r.stage);
   const champion = view["F-1"]?.pick;
 
-  const completedRounds: Record<string, boolean> = {};
-  for (const rr of ROUNDS) {
-    const ids = Array.from({ length: rr.count }, (_, i) => `${rr.prefix}-${i + 1}`);
-    completedRounds[rr.stage] = ids.every((id) => validPicks[id] !== undefined);
-  }
+  const statusLabel = status === "saving" ? "Saving…" : status === "error" ? "Couldn't save — check your connection" : status === "saved" ? "Saved" : "";
 
   return (
     <div className="space-y-5">
-      <RoundStepper rounds={ROUNDS.map((x) => ({ stage: x.stage, label: x.prefix === "F" ? "F" : x.prefix }))} active={round} completed={completedRounds} onSelect={setRound} />
+      <RoundStepper rounds={STEPPER_ROUNDS} active={round} completed={completedRounds} onSelect={setRound} />
 
       <div>
         <p className="text-xs tracking-[2px] text-[var(--bn-accent)] font-bold">KNOCKOUT</p>
@@ -98,7 +121,7 @@ export function BracketClient({ data }: { data: BracketData }) {
 
       <div className="flex items-center justify-between pt-2">
         <button disabled={round === 0} onClick={() => setRound((x) => Math.max(0, x - 1))} className="text-sm font-semibold text-white/50 disabled:opacity-30">← Back</button>
-        <span className="text-xs text-white/40">{saving ? "Saving…" : "Saved"}</span>
+        <span className={"text-xs " + (status === "error" ? "text-red-400" : "text-white/40")}>{statusLabel}</span>
         <button disabled={round === ROUNDS.length - 1} onClick={() => setRound((x) => Math.min(ROUNDS.length - 1, x + 1))} className="text-sm font-semibold text-[var(--bn-gold)] disabled:opacity-30">Next →</button>
       </div>
     </div>
