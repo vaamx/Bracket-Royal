@@ -55,6 +55,10 @@ export default async function LeaguesPage() {
         </div>
       </a>
 
+      <a href="/api/calendar" className="block text-center text-sm font-semibold text-white/50 hover:text-white/80">
+        📅 Add match deadlines to your calendar
+      </a>
+
       <section className="space-y-3">
         {leagues.map((l) => (
           <Link key={l.id} href={`/leagues/${l.id}`} className="block">
