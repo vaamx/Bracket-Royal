@@ -16,11 +16,16 @@ export function setMuted(muted: boolean): void {
 export function useCelebration() {
   return useCallback(async (intensity: "small" | "big" = "small") => {
     if (isMuted()) return;
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate(intensity === "big" ? [20, 40, 20] : 15);
+    // Celebration is non-critical — never let it crash the app (CSP, no canvas, etc.).
+    try {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(intensity === "big" ? [20, 40, 20] : 15);
+      }
+      const confetti = (await import("canvas-confetti")).default;
+      const count = intensity === "big" ? 200 : 60;
+      confetti({ particleCount: count, spread: intensity === "big" ? 100 : 60, origin: { y: 0.7 }, colors: ["#d4af37", "#f4d56a", "#7c5cff", "#ffffff"] });
+    } catch {
+      /* swallow — celebration is best-effort */
     }
-    const confetti = (await import("canvas-confetti")).default;
-    const count = intensity === "big" ? 200 : 60;
-    confetti({ particleCount: count, spread: intensity === "big" ? 100 : 60, origin: { y: 0.7 }, colors: ["#d4af37", "#f4d56a", "#7c5cff", "#ffffff"] });
   }, []);
 }

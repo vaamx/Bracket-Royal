@@ -57,7 +57,6 @@ export function BracketClient({ data }: { data: BracketData }) {
     const { validPicks: pruned } = buildBracketView(data.r32, { ...base, [matchId]: teamId });
     picksRef.current = pruned;
     setPicks(pruned);
-    if (matchId === "F-1") celebrate("big");
     setStatus("saving");
 
     const removed = Object.keys(base).filter((id) => id !== matchId && !(id in pruned));
@@ -74,6 +73,7 @@ export function BracketClient({ data }: { data: BracketData }) {
           if (delErr) throw delErr;
         }
         setStatus("saved");
+        if (matchId === "F-1") celebrate("big"); // celebrate only after the pick is saved
       } catch (e) {
         console.error("Failed to save bracket pick", matchId, e);
         setStatus("error");

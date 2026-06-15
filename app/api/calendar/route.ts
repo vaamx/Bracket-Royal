@@ -6,14 +6,16 @@ export const dynamic = "force-dynamic";
 /** Upcoming match deadlines as a downloadable .ics calendar. */
 export async function GET() {
   const supabase = await createClient();
-  const { data: matches } = await supabase
-    .from("matches")
-    .select("id, home_team_id, away_team_id, group_label, stage, lock_at, status")
-    .eq("status", "scheduled")
-    .not("lock_at", "is", null)
-    .order("lock_at", { ascending: true })
-    .limit(100);
-  const { data: teams } = await supabase.from("teams").select("id, name");
+  const [{ data: matches }, { data: teams }] = await Promise.all([
+    supabase
+      .from("matches")
+      .select("id, home_team_id, away_team_id, group_label, stage, lock_at, status")
+      .eq("status", "scheduled")
+      .not("lock_at", "is", null)
+      .order("lock_at", { ascending: true })
+      .limit(100),
+    supabase.from("teams").select("id, name"),
+  ]);
   const nameById = new Map((teams ?? []).map((t) => [t.id, t.name]));
 
   const events: IcsEvent[] = (matches ?? [])

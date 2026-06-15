@@ -15,9 +15,11 @@ export default async function LeaguesPage() {
   if (!user) redirect("/"); // sign-in is optional; no session at all → welcome
 
   const isAnonymous = user.is_anonymous === true;
-  const profile = await getSessionProfile();
-  const leagues = await getMyLeagues();
-  const badges = await getEarnedBadges();
+  const [profile, leagues, badges] = await Promise.all([
+    getSessionProfile(),
+    getMyLeagues(),
+    getEarnedBadges(),
+  ]);
   const displayName = profile?.display_name ?? (isAnonymous ? "Guest" : "Player");
 
   return (

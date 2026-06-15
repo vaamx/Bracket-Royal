@@ -38,5 +38,6 @@ export function buildIcs(events: IcsEvent[], dtstamp: string): string {
     );
   }
   lines.push("END:VCALENDAR");
-  return lines.join("\r\n");
+  // RFC 5545: every content line ends with CRLF (terminator, not just separator).
+  return lines.join("\r\n") + "\r\n";
 }

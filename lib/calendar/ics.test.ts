@@ -26,8 +26,9 @@ describe("buildIcs", () => {
     expect(ics).toContain("DESCRIPTION:line1\\nline2");
   });
 
-  it("uses CRLF line endings (RFC 5545)", () => {
+  it("uses CRLF line endings and terminates the final line (RFC 5545)", () => {
     const ics = buildIcs(events, "2026-06-01T00:00:00Z");
     expect(ics.includes("\r\n")).toBe(true);
+    expect(ics.endsWith("\r\n")).toBe(true);
   });
 });
