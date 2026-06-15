@@ -1,8 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { scoreUserGroupStage } from "@/lib/scoring/groupScore";
+import { scoreUserGroupStage, predictedBestThirds } from "@/lib/scoring/groupScore";
 import { parseScoringConfig } from "@/lib/scoring/types";
 import type { ScoringMatch, ScoringPrediction, ScoringTeam } from "@/lib/scoring/types";
-import { outcomeOf } from "@/lib/math";
+import { outcomeOf, rankThirdPlaceTeams, computeGroupStandings } from "@/lib/math";
+import { computeQualifiers, resolveR32 } from "@/lib/bracket/resolve";
+import { advanceActualBracket, type KOResult } from "@/lib/bracket/advance";
+import { scoreUserKnockout, type StageSets } from "@/lib/scoring/knockoutScore";
+import { KNOCKOUT_MATCHES } from "@/lib/bracket/structure";
 
 export interface NormalizedResult {
   matchId: string;
@@ -44,18 +48,84 @@ export async function applyResults(admin: SupabaseClient, results: NormalizedRes
 }
 
 /**
+ * Resolve R32 once all group matches are final, and advance actual winners into
+ * later slots as knockout matches finalize. Idempotent (only writes empty slots).
+ */
+export async function resolveAndAdvance(admin: SupabaseClient): Promise<{ r32Resolved: boolean; advanced: number }> {
+  const [{ data: matches, error: mErr }, { data: teams, error: tErr }] = await Promise.all([
+    admin.from("matches").select("id, stage, group_label, home_team_id, away_team_id, home_score, away_score, status, winner_team_id"),
+    admin.from("teams").select("id, group_label, fifa_rank"),
+  ]);
+  if (mErr) throw mErr;
+  if (tErr) throw tErr;
+
+  const group = (matches ?? []).filter((m) => m.stage === "group");
+  const groupsFinal = group.length > 0 && group.every((m) => m.status === "final");
+
+  // 1. Resolve R32 from group results (only if all groups done and R32 still empty).
+  let r32Resolved = false;
+  const r32Rows = (matches ?? []).filter((m) => m.stage === "r32");
+  const r32Empty = r32Rows.some((m) => !m.home_team_id || !m.away_team_id);
+  if (groupsFinal && r32Empty) {
+    const q = computeQualifiers(
+      group.map((m) => ({
+        group: m.group_label as string,
+        homeTeamId: m.home_team_id as string,
+        awayTeamId: m.away_team_id as string,
+        homeScore: m.home_score as number,
+        awayScore: m.away_score as number,
+      })),
+      (teams ?? []).map((t) => ({ id: t.id, group: t.group_label as string, fifaRank: t.fifa_rank ?? 999 }))
+    );
+    const ties = resolveR32(q);
+    for (const [matchId, tie] of ties) {
+      const { error } = await admin
+        .from("matches")
+        .update({ home_team_id: tie.homeTeamId, away_team_id: tie.awayTeamId })
+        .eq("id", matchId);
+      if (error) throw error;
+    }
+    r32Resolved = true;
+  }
+
+  // 2. Advance actual winners/losers from finalized KO matches into later slots.
+  const koFinal: KOResult[] = (matches ?? [])
+    .filter((m) => m.stage !== "group" && m.status === "final" && m.winner_team_id)
+    .map((m) => ({
+      matchId: m.id,
+      winnerTeamId: m.winner_team_id as string,
+      loserTeamId: m.winner_team_id === m.home_team_id ? (m.away_team_id as string) : (m.home_team_id as string),
+    }));
+  const slots = advanceActualBracket(koFinal);
+  let advanced = 0;
+  for (const [matchId, fill] of slots) {
+    const patch: Record<string, string> = {};
+    if (fill.homeTeamId) patch.home_team_id = fill.homeTeamId;
+    if (fill.awayTeamId) patch.away_team_id = fill.awayTeamId;
+    if (Object.keys(patch).length === 0) continue;
+    const { error } = await admin.from("matches").update(patch).eq("id", matchId);
+    if (error) throw error;
+    advanced++;
+  }
+
+  return { r32Resolved, advanced };
+}
+
+/**
  * Recompute league_standings for every member of every league from scratch
  * (idempotent). Updates points, exact_count, and rank. Service-role only.
  */
 export async function runScoring(admin: SupabaseClient): Promise<{ leagues: number; rows: number }> {
-  const [teamsRes, matchesRes, predsRes, leaguesRes, membersRes] = await Promise.all([
+  const [teamsRes, matchesRes, predsRes, leaguesRes, membersRes, koMatchesRes, koPredsRes] = await Promise.all([
     admin.from("teams").select("id, group_label, fifa_rank"),
     admin.from("matches").select("id, group_label, home_team_id, away_team_id, home_score, away_score, status").eq("stage", "group"),
     admin.from("predictions").select("user_id, match_id, predicted_home, predicted_away"),
     admin.from("leagues").select("id, scoring_config"),
     admin.from("league_members").select("league_id, user_id"),
+    admin.from("matches").select("id, stage, home_team_id, away_team_id, winner_team_id, status"),
+    admin.from("predictions").select("user_id, match_id, predicted_winner_team_id"),
   ]);
-  for (const r of [teamsRes, matchesRes, predsRes, leaguesRes, membersRes]) {
+  for (const r of [teamsRes, matchesRes, predsRes, leaguesRes, membersRes, koMatchesRes, koPredsRes]) {
     if (r.error) throw r.error;
   }
 
@@ -69,6 +139,20 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
     const list = predsByUser.get(p.user_id) ?? [];
     list.push({ match_id: p.match_id, predicted_home: p.predicted_home, predicted_away: p.predicted_away });
     predsByUser.set(p.user_id, list);
+  }
+
+  // Knockout actual advancers per stage (winners), and best-8 actual thirds.
+  const koMatches = koMatchesRes.data ?? [];
+  const actualWinnersByStage = stageSetsFromWinners(koMatches);
+  const actualThirds = bestThirdIds(matches, teams); // matches here = group matches already loaded
+
+  // Knockout predictions by user: predicted winner per KO match id.
+  const koPredsByUser = new Map<string, Map<string, string>>();
+  for (const p of koPredsRes.data ?? []) {
+    if (!p.predicted_winner_team_id) continue;
+    const m = koPredsByUser.get(p.user_id) ?? new Map<string, string>();
+    m.set(p.match_id, p.predicted_winner_team_id);
+    koPredsByUser.set(p.user_id, m);
   }
 
   const configByLeague = new Map((leaguesRes.data ?? []).map((l) => [l.id, parseScoringConfig(l.scoring_config)]));
@@ -86,10 +170,15 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
     if (!config) continue;
 
     const scored = userIds.map((userId) => {
-      const { points, exactCount } = scoreUserGroupStage(
-        predsByUser.get(userId) ?? [], matches, teams, config
-      );
-      return { league_id: leagueId, user_id: userId, points, exact_count: exactCount };
+      const group = scoreUserGroupStage(predsByUser.get(userId) ?? [], matches, teams, config);
+      const ko = scoreUserKnockout({
+        predictedWinnersByStage: stageSetsFromPicks(koPredsByUser.get(userId) ?? new Map()),
+        actualWinnersByStage: actualWinnersByStage,
+        predictedThirds: predictedThirdIds(predsByUser.get(userId) ?? [], matches, teams),
+        actualThirds,
+        config,
+      });
+      return { league_id: leagueId, user_id: userId, points: group.points + ko.points, exact_count: group.exactCount };
     });
 
     // Competition ranking: sort by points desc; equal points share a rank.
@@ -112,4 +201,56 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
 function scoredRank(scored: { points: number }[], i: number): number {
   const pts = scored[i].points;
   return scored.findIndex((s) => s.points === pts) + 1;
+}
+
+/** Map a stage string to the StageSets key (third-place playoff doesn't score). */
+function stageKey(stage: string): keyof StageSets | null {
+  if (stage === "r32" || stage === "r16" || stage === "qf" || stage === "sf" || stage === "final") return stage;
+  return null;
+}
+
+/** Actual winners grouped by stage from finalized KO match rows. */
+function stageSetsFromWinners(koMatches: Array<{ id: string; stage: string; winner_team_id: string | null; status: string }>): StageSets {
+  const out: StageSets = { r32: [], r16: [], qf: [], sf: [], final: [] };
+  for (const m of koMatches) {
+    const k = stageKey(m.stage);
+    if (k && m.status === "final" && m.winner_team_id) out[k].push(m.winner_team_id);
+  }
+  return out;
+}
+
+/** A user's predicted winners grouped by stage, from their KO winner picks. */
+function stageSetsFromPicks(picks: Map<string, string>): StageSets {
+  const out: StageSets = { r32: [], r16: [], qf: [], sf: [], final: [] };
+  for (const m of KNOCKOUT_MATCHES) {
+    const k = stageKey(m.stage);
+    const pick = picks.get(m.id);
+    if (k && pick) out[k].push(pick);
+  }
+  return out;
+}
+
+/** Best-8 actual thirds from final group results. */
+function bestThirdIds(groupMatches: ScoringMatch[], teams: ScoringTeam[]): string[] {
+  const groups = [...new Set(teams.map((t) => t.group_label).filter(Boolean))] as string[];
+  const thirdRows = [];
+  for (const g of groups) {
+    const gm = groupMatches.filter((m) => m.group_label === g && m.status === "final" && m.home_score !== null);
+    if (gm.length === 0) continue;
+    const gt = teams.filter((t) => t.group_label === g);
+    if (gm.length !== gt.length * (gt.length - 1) / 2) continue; // group not complete
+    const table = computeGroupStandings(
+      gm.map((m) => ({ homeTeamId: m.home_team_id, awayTeamId: m.away_team_id, homeScore: m.home_score as number, awayScore: m.away_score as number })),
+      { fifaRank: Object.fromEntries(gt.map((t) => [t.id, t.fifaRank])) }
+    );
+    if (table[2]) thirdRows.push(table[2]);
+  }
+  return rankThirdPlaceTeams(thirdRows, 8).map((r) => r.teamId);
+}
+
+/** A user's predicted best-8 thirds from their group predictions. */
+function predictedThirdIds(predictions: ScoringPrediction[], groupMatches: ScoringMatch[], teams: ScoringTeam[]): string[] {
+  // Reuse predictedStandings per group to get each predicted 3rd, then rank.
+  // (Imported helper — see import note in Step 3.)
+  return predictedBestThirds(predictions, groupMatches, teams);
 }

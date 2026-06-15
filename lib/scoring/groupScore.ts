@@ -1,4 +1,4 @@
-import { scorePrediction, computeGroupStandings } from "@/lib/math";
+import { scorePrediction, computeGroupStandings, rankThirdPlaceTeams } from "@/lib/math";
 import { predictedStandings } from "@/lib/predictions/toStandings";
 import type {
   LeagueScoringConfig,
@@ -89,4 +89,28 @@ export function scoreUserGroupStage(
   }
 
   return { points, exactCount };
+}
+
+/** A user's predicted best-8 third-place teams (from their group predictions). */
+export function predictedBestThirds(
+  predictions: ScoringPrediction[],
+  matches: ScoringMatch[],
+  teams: ScoringTeam[]
+): string[] {
+  const predByMatch = new Map(predictions.map((p) => [p.match_id, p]));
+  const groups = [...new Set(teams.map((t) => t.group_label).filter(Boolean))] as string[];
+  const thirdRows = [];
+  for (const g of groups) {
+    const groupTeams = teams.filter((t) => t.group_label === g);
+    const groupMatches = matches.filter((m) => m.group_label === g);
+    const table = predictedStandings(
+      groupTeams.map((t) => ({ id: t.id, fifaRank: t.fifaRank })),
+      groupMatches.map((m) => {
+        const p = predByMatch.get(m.id);
+        return { home_team_id: m.home_team_id, away_team_id: m.away_team_id, predicted_home: p?.predicted_home ?? null, predicted_away: p?.predicted_away ?? null };
+      })
+    );
+    if (table[2]) thirdRows.push(table[2]);
+  }
+  return rankThirdPlaceTeams(thirdRows, 8).map((r) => r.teamId);
 }

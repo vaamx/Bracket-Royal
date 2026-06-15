@@ -35,6 +35,9 @@ async function main() {
 
   const applied = await applyResults(admin, results);
   console.log(`Applied ${applied} results`);
+  const { resolveAndAdvance } = await import("../lib/scoring/run");
+  const r = await resolveAndAdvance(admin);
+  console.log(`Bracket: R32 resolved=${r.r32Resolved}, advanced ${r.advanced} slots`);
   const { leagues, rows } = await runScoring(admin);
   console.log(`Scored ${rows} standings rows across ${leagues} leagues`);
 }

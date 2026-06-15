@@ -50,6 +50,28 @@ async function main() {
   const { error: matchErr } = await admin.from("matches").upsert(matchRows, { onConflict: "id" });
   if (matchErr) throw matchErr;
   console.log(`Upserted ${matchRows.length} matches`);
+
+  // 3. Knockout match rows (teams resolved later by the bracket service).
+  const { KNOCKOUT_MATCHES } = await import("../lib/bracket/structure");
+  // Knockout kicks off after the group stage (purely indicative fixture timing).
+  const KO_START = Date.UTC(2026, 5, 28, 18, 0, 0);
+  const koRows = KNOCKOUT_MATCHES.map((m, i) => {
+    const kickoff = new Date(KO_START + i * 6 * 60 * 60 * 1000).toISOString();
+    return {
+      id: m.id,
+      stage: m.stage,
+      group_label: null,
+      bracket_slot: m.id,
+      home_team_id: null,
+      away_team_id: null,
+      kickoff_at: kickoff,
+      lock_at: kickoff,
+      status: "scheduled" as const,
+    };
+  });
+  const { error: koErr } = await admin.from("matches").upsert(koRows, { onConflict: "id" });
+  if (koErr) throw koErr;
+  console.log(`Upserted ${koRows.length} knockout matches`);
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
