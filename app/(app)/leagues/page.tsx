@@ -6,6 +6,8 @@ import { createLeagueForm, joinLeagueForm, signOut } from "./actions";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { getEarnedBadges } from "@/lib/achievements/queries";
+import { BadgeStrip } from "@/components/ui/BadgeStrip";
 
 export default async function LeaguesPage() {
   const supabase = await createClient();
@@ -13,8 +15,11 @@ export default async function LeaguesPage() {
   if (!user) redirect("/"); // sign-in is optional; no session at all → welcome
 
   const isAnonymous = user.is_anonymous === true;
-  const profile = await getSessionProfile();
-  const leagues = await getMyLeagues();
+  const [profile, leagues, badges] = await Promise.all([
+    getSessionProfile(),
+    getMyLeagues(),
+    getEarnedBadges(),
+  ]);
   const displayName = profile?.display_name ?? (isAnonymous ? "Guest" : "Player");
 
   return (
@@ -35,6 +40,8 @@ export default async function LeaguesPage() {
         )}
       </header>
 
+      <BadgeStrip earned={badges} />
+
       {isAnonymous && (
         <Link href="/login" className="block">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-center text-sm text-white/60">
@@ -53,6 +60,10 @@ export default async function LeaguesPage() {
         <div className="rounded-2xl border border-[var(--bn-accent)]/30 bg-[var(--bn-accent)]/10 p-4 text-center font-extrabold text-[var(--bn-accent)]">
           🗺️ Build your knockout bracket →
         </div>
+      </a>
+
+      <a href="/api/calendar" className="block text-center text-sm font-semibold text-white/50 hover:text-white/80">
+        📅 Add match deadlines to your calendar
       </a>
 
       <section className="space-y-3">

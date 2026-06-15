@@ -7,6 +7,7 @@ import { computeQualifiers, resolveR32 } from "@/lib/bracket/resolve";
 import { advanceActualBracket, type KOResult } from "@/lib/bracket/advance";
 import { scoreUserKnockout, type StageSets } from "@/lib/scoring/knockoutScore";
 import { KNOCKOUT_MATCHES } from "@/lib/bracket/structure";
+import { computeAchievements } from "@/lib/achievements/compute";
 
 export interface NormalizedResult {
   matchId: string;
@@ -118,7 +119,7 @@ export async function resolveAndAdvance(admin: SupabaseClient): Promise<{ r32Res
 export async function runScoring(admin: SupabaseClient): Promise<{ leagues: number; rows: number }> {
   const [teamsRes, matchesRes, predsRes, leaguesRes, membersRes, koMatchesRes, koPredsRes] = await Promise.all([
     admin.from("teams").select("id, group_label, fifa_rank"),
-    admin.from("matches").select("id, group_label, home_team_id, away_team_id, home_score, away_score, status").eq("stage", "group"),
+    admin.from("matches").select("id, group_label, home_team_id, away_team_id, home_score, away_score, status, kickoff_at").eq("stage", "group"),
     admin.from("predictions").select("user_id, match_id, predicted_home, predicted_away"),
     admin.from("leagues").select("id, scoring_config"),
     admin.from("league_members").select("league_id, user_id"),
@@ -192,6 +193,28 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
     const { error } = await admin.from("league_standings").upsert(ranked, { onConflict: "league_id,user_id" });
     if (error) throw error;
     rows += ranked.length;
+  }
+
+  // Achievements are global (derived from a user's predictions vs real results),
+  // so compute once per user and upsert (existing badges are kept via do-nothing).
+  const finalChampion = koMatches.find((m) => m.id === "F-1" && m.status === "final")?.winner_team_id ?? null;
+  const allUserIds = new Set<string>([...predsByUser.keys(), ...koPredsByUser.keys()]);
+  const badgeRows: { user_id: string; badge_key: string }[] = [];
+  for (const userId of allUserIds) {
+    const { badges } = computeAchievements({
+      groupMatches: matches.map((m) => ({
+        id: m.id, group_label: m.group_label, kickoff_at: (m as { kickoff_at?: string | null }).kickoff_at ?? null,
+        home_score: m.home_score, away_score: m.away_score, status: m.status,
+      })),
+      predictions: predsByUser.get(userId) ?? [],
+      finalWinnerTeamId: finalChampion,
+      finalPickTeamId: koPredsByUser.get(userId)?.get("F-1") ?? null,
+    });
+    for (const key of badges) badgeRows.push({ user_id: userId, badge_key: key });
+  }
+  if (badgeRows.length > 0) {
+    const { error } = await admin.from("achievements").upsert(badgeRows, { onConflict: "user_id,badge_key", ignoreDuplicates: true });
+    if (error) throw error;
   }
 
   return { leagues: membersByLeague.size, rows };
