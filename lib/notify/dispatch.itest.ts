@@ -22,6 +22,8 @@ describe("notification selection against live data (integration)", () => {
   afterAll(async () => {
     await admin.from("notification_prefs").delete().eq("user_id", userId);
     await admin.from("notifications_sent").delete().eq("user_id", userId);
+    // Restore the match we mutated so later integration files see a clean slate.
+    await admin.from("matches").update({ status: "scheduled", lock_at: null }).eq("id", "GA-MEX-BEL");
   });
 
   it("selects a due reminder for an opted-in user who hasn't predicted, and dedups once sent", async () => {
