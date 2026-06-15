@@ -37,6 +37,19 @@ describe("buildBracketView", () => {
     expect(validPicks["R16-1"]).toBeUndefined();
   });
 
+  it("collapses the whole downstream subtree (multi-level) when an upstream pick changes", () => {
+    // A advanced all the way: R32-1 → R16-1 → QF-1.
+    let picks: Record<string, string> = { "R32-1": "A", "R32-2": "C", "R16-1": "A", "QF-1": "A" };
+    let res = buildBracketView(r32, picks);
+    expect(res.validPicks["R16-1"]).toBe("A");
+    expect(res.validPicks["QF-1"]).toBe("A");
+    // Orphan A at the root: both R16-1 AND QF-1 picks must vanish (transitive collapse).
+    picks = { ...picks, "R32-1": "B" };
+    res = buildBracketView(r32, picks);
+    expect(res.validPicks["R16-1"]).toBeUndefined();
+    expect(res.validPicks["QF-1"]).toBeUndefined();
+  });
+
   it("propagates SF winners to the final and SF losers to the third-place match", () => {
     // Full 16-tie fixture; picking every HOME team makes the bracket deterministic.
     const full: Record<string, { homeTeamId: string; awayTeamId: string }> = {};
