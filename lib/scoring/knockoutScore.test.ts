@@ -48,6 +48,34 @@ describe("scoreUserKnockout", () => {
     expect(points).toBe(cfg.ko.r32 + cfg.ko.r16 + cfg.ko.qf + cfg.ko.sf + cfg.ko.champion);
   });
 
+  it("awards the exact-score bonus only for an exact KO scoreline", () => {
+    const base = {
+      predictedWinnersByStage: { r32: [], r16: [], qf: [], sf: [], final: [] },
+      actualWinnersByStage: { r32: [], r16: [], qf: [], sf: [], final: [] },
+      predictedThirds: [], actualThirds: [], config: cfg,
+    };
+    const actualScores = { "R32-1": { home: 2, away: 1 }, "R32-2": { home: 0, away: 0 } };
+    // Exact on R32-1, wrong score on R32-2, missing on others.
+    const exactOne = scoreUserKnockout({
+      ...base,
+      predictedScores: { "R32-1": { home: 2, away: 1 }, "R32-2": { home: 1, away: 0 } },
+      actualScores,
+    }).points;
+    expect(exactOne).toBe(cfg.ko.exactBonus); // only R32-1 exact
+
+    // Both exact → 2x bonus.
+    const exactTwo = scoreUserKnockout({
+      ...base,
+      predictedScores: { "R32-1": { home: 2, away: 1 }, "R32-2": { home: 0, away: 0 } },
+      actualScores,
+    }).points;
+    expect(exactTwo).toBe(2 * cfg.ko.exactBonus);
+
+    // No scoreline predictions → no bonus.
+    const none = scoreUserKnockout({ ...base, actualScores }).points;
+    expect(none).toBe(0);
+  });
+
   it("does not inflate when a team appears twice in a predicted set (malformed input)", () => {
     const { points } = scoreUserKnockout({
       predictedWinnersByStage: { r32: ["A", "A"], r16: [], qf: [], sf: [], final: [] },

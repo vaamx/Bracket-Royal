@@ -123,8 +123,8 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
     admin.from("predictions").select("user_id, match_id, predicted_home, predicted_away"),
     admin.from("leagues").select("id, scoring_config"),
     admin.from("league_members").select("league_id, user_id"),
-    admin.from("matches").select("id, stage, home_team_id, away_team_id, winner_team_id, status"),
-    admin.from("predictions").select("user_id, match_id, predicted_winner_team_id"),
+    admin.from("matches").select("id, stage, home_team_id, away_team_id, winner_team_id, status, home_score, away_score"),
+    admin.from("predictions").select("user_id, match_id, predicted_winner_team_id, predicted_home, predicted_away"),
   ]);
   for (const r of [teamsRes, matchesRes, predsRes, leaguesRes, membersRes, koMatchesRes, koPredsRes]) {
     if (r.error) throw r.error;
@@ -147,13 +147,28 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
   const actualWinnersByStage = stageSetsFromWinners(koMatches);
   const actualThirds = bestThirdIds(matches, teams); // matches here = group matches already loaded
 
-  // Knockout predictions by user: predicted winner per KO match id.
+  // Knockout match id set + actual 90' scorelines (for the exact-score bonus).
+  const koIds = new Set(koMatches.map((m) => m.id));
+  const actualKoScores: Record<string, { home: number | null; away: number | null }> = {};
+  for (const m of koMatches) {
+    if (m.status === "final") actualKoScores[m.id] = { home: m.home_score, away: m.away_score };
+  }
+
+  // Knockout predictions by user: predicted winner + scoreline per KO match id.
   const koPredsByUser = new Map<string, Map<string, string>>();
+  const koScoresByUser = new Map<string, Record<string, { home: number | null; away: number | null }>>();
   for (const p of koPredsRes.data ?? []) {
-    if (!p.predicted_winner_team_id) continue;
-    const m = koPredsByUser.get(p.user_id) ?? new Map<string, string>();
-    m.set(p.match_id, p.predicted_winner_team_id);
-    koPredsByUser.set(p.user_id, m);
+    if (!koIds.has(p.match_id)) continue;
+    if (p.predicted_winner_team_id) {
+      const m = koPredsByUser.get(p.user_id) ?? new Map<string, string>();
+      m.set(p.match_id, p.predicted_winner_team_id);
+      koPredsByUser.set(p.user_id, m);
+    }
+    if (p.predicted_home !== null || p.predicted_away !== null) {
+      const s = koScoresByUser.get(p.user_id) ?? {};
+      s[p.match_id] = { home: p.predicted_home, away: p.predicted_away };
+      koScoresByUser.set(p.user_id, s);
+    }
   }
 
   const configByLeague = new Map((leaguesRes.data ?? []).map((l) => [l.id, parseScoringConfig(l.scoring_config)]));
@@ -178,6 +193,8 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
         predictedThirds: predictedThirdIds(predsByUser.get(userId) ?? [], matches, teams),
         actualThirds,
         config,
+        predictedScores: koScoresByUser.get(userId),
+        actualScores: actualKoScores,
       });
       return { league_id: leagueId, user_id: userId, points: group.points + ko.points, exact_count: group.exactCount };
     });

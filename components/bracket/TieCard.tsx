@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import type { BracketTeam } from "@/lib/bracket/queries";
+import { ScoreInput } from "@/components/predict/ScoreInput";
+import { useI18n } from "@/lib/i18n/provider";
 
 function TeamRow({
   teamId, team, picked, decided, locked, onPick,
@@ -58,6 +60,7 @@ function TeamRow({
 
 export function TieCard({
   home, away, homeTeam, awayTeam, pick, locked, label, onPick,
+  homeScore, awayScore, onScore,
 }: {
   home?: string;
   away?: string;
@@ -67,7 +70,11 @@ export function TieCard({
   locked: boolean;
   label?: string;
   onPick: (teamId: string) => void;
+  homeScore?: number | null;
+  awayScore?: number | null;
+  onScore?: (side: "home" | "away", value: number | null) => void;
 }) {
+  const { t } = useI18n();
   const decided = pick !== undefined;
   return (
     <motion.div
@@ -98,6 +105,19 @@ export function TieCard({
         teamId={away} team={awayTeam} picked={pick === away} decided={decided} locked={locked}
         onPick={() => away && onPick(away)}
       />
+
+      {onScore && home && away && (
+        <div className="border-t border-white/5 px-4 py-2.5">
+          <p className="mb-1.5 text-center text-[10px] font-bold uppercase tracking-[1.5px] text-white/35">{t.bracket.predictedScore}</p>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-xs font-bold text-white/55">{home}</span>
+            <ScoreInput value={homeScore ?? null} onChange={(v) => onScore("home", v)} disabled={locked} aria-label={`${homeTeam?.name ?? home} score`} />
+            <span className="text-white/25">:</span>
+            <ScoreInput value={awayScore ?? null} onChange={(v) => onScore("away", v)} disabled={locked} aria-label={`${awayTeam?.name ?? away} score`} />
+            <span className="text-xs font-bold text-white/55">{away}</span>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -25,6 +25,7 @@ export interface BracketData {
   r32: Record<string, { homeTeamId: string | null; awayTeamId: string | null }>;
   matches: BracketMatchRow[];               // all 32 KO matches (for lock/status)
   picks: Record<string, string>;            // matchId -> predicted winner teamId
+  scores: Record<string, { home: number | null; away: number | null }>; // matchId -> predicted KO scoreline
   userId: string | null;
 }
 
@@ -100,18 +101,25 @@ export async function getBracketData(): Promise<BracketData> {
   // Whether every slot has a team is governed separately by `seeded`.
   const resolved = Object.keys(r32).length === 16;
 
+  const koIds = new Set(matches.map((m) => m.id));
   let picks: Record<string, string> = {};
+  const scores: BracketData["scores"] = {};
   if (user) {
     const { data: preds } = await supabase
       .from("predictions")
-      .select("match_id, predicted_winner_team_id")
-      .eq("user_id", user.id)
-      .not("predicted_winner_team_id", "is", null);
-    picks = Object.fromEntries((preds ?? []).map((p) => [p.match_id, p.predicted_winner_team_id as string]));
+      .select("match_id, predicted_winner_team_id, predicted_home, predicted_away")
+      .eq("user_id", user.id);
+    for (const p of preds ?? []) {
+      if (!koIds.has(p.match_id)) continue;
+      if (p.predicted_winner_team_id) picks[p.match_id] = p.predicted_winner_team_id as string;
+      if (p.predicted_home !== null || p.predicted_away !== null) {
+        scores[p.match_id] = { home: p.predicted_home, away: p.predicted_away };
+      }
+    }
   }
 
   return {
     resolved, mode, seeded, groupsReady, groupsTotal,
-    teams, r32, matches, picks, userId: user?.id ?? null,
+    teams, r32, matches, picks, scores, userId: user?.id ?? null,
   };
 }

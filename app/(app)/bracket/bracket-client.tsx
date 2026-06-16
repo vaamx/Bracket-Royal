@@ -53,9 +53,13 @@ export function BracketClient({ data }: { data: BracketData }) {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const locks = useMemo(() => lockedById(data.matches), [data.matches]);
 
+  const [koScores, setKoScores] = useState<Record<string, { home: number | null; away: number | null }>>(data.scores);
+
   // Synchronous source of truth for the latest valid picks — so rapid taps build
   // on each other instead of a stale render snapshot.
   const picksRef = useRef<Record<string, string>>(data.picks);
+  const koScoresRef = useRef(data.scores);
+  const scoreTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // Serialize DB writes so a later pick's delete can't race a prior upsert.
   const saveChain = useRef<Promise<void>>(Promise.resolve());
 
@@ -73,6 +77,22 @@ export function BracketClient({ data }: { data: BracketData }) {
   const totalDone = useMemo(() => Object.values(roundCounts).reduce((a, c) => a + c.done, 0), [roundCounts]);
   const totalTies = useMemo(() => Object.values(roundCounts).reduce((a, c) => a + c.total, 0), [roundCounts]);
 
+  // Upsert one KO tie's full prediction: who advances + the optional 90' scoreline.
+  // Reads the latest winner/score from refs so concurrent writes don't clobber.
+  function upsertTie(userId: string, matchId: string) {
+    const sc = koScoresRef.current[matchId] ?? { home: null, away: null };
+    return supabase.from("predictions").upsert(
+      {
+        user_id: userId,
+        match_id: matchId,
+        predicted_winner_team_id: picksRef.current[matchId] ?? null,
+        predicted_home: sc.home,
+        predicted_away: sc.away,
+      },
+      { onConflict: "user_id,match_id" }
+    );
+  }
+
   function onPick(matchId: string, teamId: string) {
     if (!data.userId) return;
     const base = picksRef.current;
@@ -81,14 +101,20 @@ export function BracketClient({ data }: { data: BracketData }) {
     setPicks(pruned);
     setStatus("saving");
 
+    // Picks orphaned by this change (their tie's teams changed) — drop their rows
+    // and any stale scoreline with them.
     const removed = Object.keys(base).filter((id) => id !== matchId && !(id in pruned));
+    if (removed.length > 0) {
+      const nextScores = { ...koScoresRef.current };
+      for (const id of removed) delete nextScores[id];
+      koScoresRef.current = nextScores;
+      setKoScores(nextScores);
+    }
+
     const userId = data.userId;
     saveChain.current = saveChain.current.then(async () => {
       try {
-        const { error: upErr } = await supabase.from("predictions").upsert(
-          { user_id: userId, match_id: matchId, predicted_winner_team_id: teamId },
-          { onConflict: "user_id,match_id" }
-        );
+        const { error: upErr } = await upsertTie(userId, matchId);
         if (upErr) throw upErr;
         if (removed.length > 0) {
           const { error: delErr } = await supabase.from("predictions").delete().eq("user_id", userId).in("match_id", removed);
@@ -101,6 +127,29 @@ export function BracketClient({ data }: { data: BracketData }) {
         setStatus("error");
       }
     });
+  }
+
+  function onScore(matchId: string, side: "home" | "away", value: number | null) {
+    if (!data.userId) return;
+    const cur = koScoresRef.current[matchId] ?? { home: null, away: null };
+    const next = { ...koScoresRef.current, [matchId]: { ...cur, [side]: value } };
+    koScoresRef.current = next;
+    setKoScores(next);
+    setStatus("saving");
+    const userId = data.userId;
+    clearTimeout(scoreTimers.current[matchId]);
+    scoreTimers.current[matchId] = setTimeout(() => {
+      saveChain.current = saveChain.current.then(async () => {
+        try {
+          const { error } = await upsertTie(userId, matchId);
+          if (error) throw error;
+          setStatus("saved");
+        } catch (e) {
+          console.error("Failed to save bracket score", matchId, e);
+          setStatus("error");
+        }
+      });
+    }, 600);
   }
 
   const r = ROUNDS[round];
@@ -213,7 +262,7 @@ export function BracketClient({ data }: { data: BracketData }) {
           </p>
         </motion.div>
       ) : (
-        <p className="text-xs text-white/45">{t.bracket.tapHintList}</p>
+        <p className="text-xs text-white/45">{t.bracket.scoreHint}</p>
       )}
 
       <div className="space-y-3">
@@ -230,6 +279,9 @@ export function BracketClient({ data }: { data: BracketData }) {
               pick={v.pick}
               locked={locks[id] ?? false}
               onPick={(teamId) => onPick(id, teamId)}
+              homeScore={koScores[id]?.home}
+              awayScore={koScores[id]?.away}
+              onScore={(side, value) => onScore(id, side, value)}
             />
           );
         })}

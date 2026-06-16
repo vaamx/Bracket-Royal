@@ -8,12 +8,22 @@ export interface StageSets {
   final: string[]; // the champion (final winner)
 }
 
+export interface KoScoreline {
+  home: number | null;
+  away: number | null;
+}
+
 export interface KnockoutScoreInput {
   predictedWinnersByStage: StageSets;
   actualWinnersByStage: StageSets;
   predictedThirds: string[]; // user's predicted best-8 third-place teams
   actualThirds: string[];    // actual best-8 third-place teams
   config: LeagueScoringConfig;
+  /** Optional 90-minute scoreline predictions/results per KO match id. An exact
+   *  regulation score earns `config.ko.exactBonus` on top of advancer points
+   *  (the advancer points already cover "who won", so only exact scores bonus). */
+  predictedScores?: Record<string, KoScoreline>;
+  actualScores?: Record<string, KoScoreline>;
 }
 
 /** True set-intersection size — dedupes `a` so malformed (duplicate) picks can't inflate. */
@@ -36,5 +46,16 @@ export function scoreUserKnockout(input: KnockoutScoreInput): { points: number }
   points += intersectionCount(p.sf, a.sf) * config.ko.sf;
   points += intersectionCount(p.final, a.final) * config.ko.champion;
   points += intersectionCount(input.predictedThirds, input.actualThirds) * config.qualThird;
+
+  // Exact 90-minute scoreline bonus per KO tie.
+  const pred = input.predictedScores ?? {};
+  const act = input.actualScores ?? {};
+  for (const [matchId, ascore] of Object.entries(act)) {
+    if (ascore.home === null || ascore.away === null) continue;
+    const pscore = pred[matchId];
+    if (!pscore || pscore.home === null || pscore.away === null) continue;
+    if (pscore.home === ascore.home && pscore.away === ascore.away) points += config.ko.exactBonus;
+  }
+
   return { points };
 }
