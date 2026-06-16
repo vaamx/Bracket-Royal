@@ -18,9 +18,9 @@ export interface BracketMatchRow {
 export interface BracketData {
   resolved: boolean;                       // is the R32 filled (always true once groups have teams)?
   mode: "predicted" | "actual";            // predicted = from the user's group picks; actual = real qualifiers
-  seeded: boolean;                          // in predicted mode, has the user made enough picks to fill the bracket?
-  groupPicksMade: number;                   // # of group matches the user has predicted
-  groupMatchesTotal: number;                // # of group matches total
+  seeded: boolean;                          // in predicted mode, are ALL groups predicted so the bracket can fill?
+  groupsReady: number;                      // # of groups fully predicted-or-final
+  groupsTotal: number;                      // # of groups total
   teams: Record<string, BracketTeam>;       // teamId -> display
   r32: Record<string, { homeTeamId: string | null; awayTeamId: string | null }>;
   matches: BracketMatchRow[];               // all 32 KO matches (for lock/status)
@@ -55,14 +55,16 @@ export async function getBracketData(): Promise<BracketData> {
   const allGroupsFinal =
     groups.length > 0 && groups.every((g) => g.matches.length > 0 && g.matches.every((m) => m.status === "final"));
 
-  // How far along is the user's group stage? A match counts as "picked" when both
-  // scores are predicted. We only seed the predicted bracket once they've made a
-  // pick — otherwise we'd silently fill it with FIFA-rank favorites they never chose.
-  const allGroupMatches = groups.flatMap((g) => g.matches);
-  const groupMatchesTotal = allGroupMatches.length;
-  const groupPicksMade = allGroupMatches.filter(
-    (m) => m.predictedHome != null && m.predictedAway != null
-  ).length;
+  // The official Round of 32 — especially where the four best third-placed teams
+  // land — can only be formed once EVERY group is decided. So we only seed the
+  // predicted bracket when all groups are fully predicted (or already final);
+  // otherwise we'd fill empty groups with FIFA-rank guesses the user never made.
+  const groupReady = (g: (typeof groups)[number]) =>
+    g.matches.length > 0 &&
+    g.matches.every((m) => m.status === "final" || (m.predictedHome != null && m.predictedAway != null));
+  const groupsTotal = groups.length;
+  const groupsReady = groups.filter(groupReady).length;
+  const allGroupsReady = groupsTotal > 0 && groupsReady === groupsTotal;
 
   const r32: BracketData["r32"] = {};
   let mode: "predicted" | "actual";
@@ -72,8 +74,8 @@ export async function getBracketData(): Promise<BracketData> {
     for (const m of matches) {
       if (m.stage === "r32") r32[m.id] = { homeTeamId: m.homeTeamId, awayTeamId: m.awayTeamId };
     }
-  } else if (groupPicksMade === 0) {
-    // No picks yet: present an empty bracket and let the page prompt them to predict.
+  } else if (!allGroupsReady) {
+    // Not every group is predicted yet: present an empty bracket and prompt them.
     mode = "predicted";
     seeded = false;
     for (const m of matches) {
@@ -109,7 +111,7 @@ export async function getBracketData(): Promise<BracketData> {
   }
 
   return {
-    resolved, mode, seeded, groupPicksMade, groupMatchesTotal,
+    resolved, mode, seeded, groupsReady, groupsTotal,
     teams, r32, matches, picks, userId: user?.id ?? null,
   };
 }
