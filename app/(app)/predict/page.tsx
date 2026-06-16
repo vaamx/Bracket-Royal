@@ -13,8 +13,13 @@ export default async function PredictPage() {
   const groups = await getGroupsForPrediction();
   if (groups.length === 0) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <p className="text-white/60">No groups are loaded yet. Run <code className="text-[var(--bn-gold)]">npm run seed</code>.</p>
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center p-6 text-center">
+        <div className="text-5xl">⚽</div>
+        <h1 className="mt-3 text-2xl font-black">Groups aren&apos;t loaded yet</h1>
+        <p className="mt-2 max-w-xs text-sm text-white/60">
+          The tournament data hasn&apos;t been imported. Once the groups are in, you can predict every match here.
+        </p>
+        <p className="mt-4 text-xs text-white/30">Admin: run <code className="text-[var(--bn-gold)]">npm run ingest:wc</code></p>
       </main>
     );
   }
