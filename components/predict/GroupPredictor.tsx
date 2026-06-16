@@ -53,11 +53,16 @@ export function GroupPredictor({
   return (
     <div className="space-y-4">
       <div>
-        <div className="mb-1.5 flex items-center justify-between px-1">
+        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
           <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-white/40">Predicted finish</p>
-          <p className="flex items-center gap-1 text-[10px] font-bold text-[var(--bn-success)]">
-            <span className="inline-block h-2 w-2 rounded-full bg-[var(--bn-success)]" /> Top 2 advance
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="flex items-center gap-1 text-[10px] font-bold text-[var(--bn-success)]">
+              <span className="inline-block h-2 w-2 rounded-full bg-[var(--bn-success)]" /> Top 2 advance
+            </p>
+            <p className="flex items-center gap-1 text-[10px] font-bold text-[var(--bn-gold)]">
+              <span className="inline-block h-2 w-2 rounded-full bg-[var(--bn-gold)]/70" /> 3rd: best 8 advance
+            </p>
+          </div>
         </div>
         <PredictedTable rows={standings} teamsById={teamsById} />
       </div>
