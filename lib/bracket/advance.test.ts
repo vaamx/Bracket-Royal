@@ -2,14 +2,13 @@ import { describe, it, expect } from "vitest";
 import { advanceActualBracket, type KOResult } from "@/lib/bracket/advance";
 
 describe("advanceActualBracket", () => {
-  it("places R32 winners into the correct R16 slots", () => {
-    // R32-1 and R32-2 both feed R16-1 (home, away respectively).
+  it("places R32 winners into the correct R16 slots (official feeds: R32-2,R32-5 → R16-1)", () => {
     const results: KOResult[] = [
-      { matchId: "R32-1", winnerTeamId: "1A", loserTeamId: "T0" },
-      { matchId: "R32-2", winnerTeamId: "1B", loserTeamId: "T1" },
+      { matchId: "R32-2", winnerTeamId: "1E", loserTeamId: "x" }, // → R16-1 home
+      { matchId: "R32-5", winnerTeamId: "1I", loserTeamId: "x" }, // → R16-1 away
     ];
     const slots = advanceActualBracket(results);
-    expect(slots.get("R16-1")).toEqual({ homeTeamId: "1A", awayTeamId: "1B" });
+    expect(slots.get("R16-1")).toEqual({ homeTeamId: "1E", awayTeamId: "1I" });
   });
 
   it("drops semifinal losers into the third-place match", () => {
