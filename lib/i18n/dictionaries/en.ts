@@ -175,6 +175,12 @@ export const en = {
     makePicksTitle: "You're in! 🎯",
     makePicksSub: "Make your predictions to start earning points and climb this board.",
     makePicksCta: "Make your predictions →",
+    picksOf: (name: string) => `${name}'s picks`,
+    lockedNote: "Only picks for matches that have kicked off are shown — fair play.",
+    hidden: (n: number) => `🔒 ${n} upcoming ${n === 1 ? "pick" : "picks"} hidden until kickoff`,
+    noPicks: "No revealed picks yet — they appear once matches kick off.",
+    theirPick: "their pick",
+    ftShort: "FT",
   },
   settings: {
     eyebrow: "ACCOUNT",

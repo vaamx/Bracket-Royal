@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { sortStandingRows, type StandingRow } from "@/lib/leaderboard/types";
@@ -72,12 +73,13 @@ export function LeaderboardClient({
               layout
               transition={{ type: "spring", stiffness: 420, damping: 30 }}
               className={
-                "flex items-center justify-between rounded-xl border px-4 py-3 " +
+                "rounded-xl border transition-colors " +
                 (isMe
                   ? "border-[var(--bn-gold)]/50 bg-[var(--bn-gold)]/10"
-                  : "border-white/10 bg-white/[0.03]")
+                  : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]")
               }
             >
+              <Link href={`/leagues/${leagueId}/u/${r.userId}`} className="flex items-center justify-between px-4 py-3">
               <span className="flex min-w-0 items-center gap-3">
                 <span className="grid w-7 shrink-0 place-items-center text-center text-base font-extrabold text-[var(--bn-gold)]">
                   {MEDALS[i] ?? i + 1}
@@ -90,7 +92,9 @@ export function LeaderboardClient({
               <span className="flex shrink-0 items-center gap-3 text-sm">
                 <span className="text-white/40">{t.leagues.exact(r.exactCount)}</span>
                 <span className="font-black tabular-nums text-[var(--bn-gold)]">{r.points}</span>
+                <span className="text-white/30">›</span>
               </span>
+              </Link>
             </motion.li>
           );
         })}

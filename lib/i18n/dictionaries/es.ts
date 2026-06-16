@@ -177,6 +177,12 @@ export const es: Dictionary = {
     makePicksTitle: "¡Ya estás dentro! 🎯",
     makePicksSub: "Haz tus pronósticos para empezar a sumar puntos y subir en esta tabla.",
     makePicksCta: "Haz tus pronósticos →",
+    picksOf: (name: string) => `Pronósticos de ${name}`,
+    lockedNote: "Solo se muestran los pronósticos de partidos que ya empezaron — juego limpio.",
+    hidden: (n: number) => `🔒 ${n} ${n === 1 ? "pronóstico" : "pronósticos"} próximos ocultos hasta el inicio`,
+    noPicks: "Aún no hay pronósticos visibles — aparecen cuando empiezan los partidos.",
+    theirPick: "su pronóstico",
+    ftShort: "FINAL",
   },
   settings: {
     eyebrow: "CUENTA",
