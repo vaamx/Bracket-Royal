@@ -50,6 +50,19 @@ export function GroupPredictor({
     [group.matches, group.teams]
   );
 
+  // Group the 6 fixtures by matchday for readable section headers.
+  const matchdays = useMemo(() => {
+    const byDay = new Map<number | null, typeof group.matches>();
+    for (const m of group.matches) {
+      const d = m.matchday ?? null;
+      if (!byDay.has(d)) byDay.set(d, []);
+      byDay.get(d)!.push(m);
+    }
+    return [...byDay.entries()]
+      .sort((a, b) => (a[0] ?? 99) - (b[0] ?? 99))
+      .map(([day, matches]) => ({ day, matches }));
+  }, [group.matches]);
+
   return (
     <div className="space-y-4">
       <div>
@@ -66,16 +79,23 @@ export function GroupPredictor({
         </div>
         <PredictedTable rows={standings} teamsById={teamsById} />
       </div>
-      <div className="space-y-2">
-        {group.matches.map((m) => (
-          <MatchRow
-            key={m.id}
-            match={m}
-            home={teamsById[m.homeTeamId]}
-            away={teamsById[m.awayTeamId]}
-            locked={isLocked(m)}
-            onScore={(side, v) => onScore(m.id, side, v)}
-          />
+      <div className="space-y-4">
+        {matchdays.map(({ day, matches }) => (
+          <div key={day ?? "x"} className="space-y-2">
+            <p className="px-1 text-[10px] font-bold uppercase tracking-[1.5px] text-white/35">
+              {day != null ? `Matchday ${day}` : "Fixtures"}
+            </p>
+            {matches.map((m) => (
+              <MatchRow
+                key={m.id}
+                match={m}
+                home={teamsById[m.homeTeamId]}
+                away={teamsById[m.awayTeamId]}
+                locked={isLocked(m)}
+                onScore={(side, v) => onScore(m.id, side, v)}
+              />
+            ))}
+          </div>
         ))}
       </div>
       <p className={"h-4 text-right text-xs " + (saveFailed ? "text-red-400" : "text-white/40")}>
