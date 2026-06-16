@@ -60,6 +60,48 @@ export async function getMyLeaguesDetailed(): Promise<LeagueCard[]> {
     .sort((a, b) => Number(b.is_global) - Number(a.is_global) || a.name.localeCompare(b.name));
 }
 
+export interface MyStanding {
+  points: number;
+  rank: number | null;
+  exactCount: number;
+  memberCount: number;
+  leagueId: string | null;
+}
+
+/**
+ * The signed-in user's standing in the GLOBAL league — their headline points,
+ * rank, and exact-score count — so we can show "your score" anywhere (header
+ * pill, profile hero). Cheap: at most three indexed lookups. Zeros when the
+ * user hasn't been scored yet (new tournament / no predictions).
+ */
+export async function getMyGlobalStanding(): Promise<MyStanding> {
+  const empty: MyStanding = { points: 0, rank: null, exactCount: 0, memberCount: 0, leagueId: null };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return empty;
+
+  const { data: league } = await supabase
+    .from("leagues").select("id").eq("is_global", true).maybeSingle();
+  if (!league) return empty;
+
+  const [{ data: standing }, { count }] = await Promise.all([
+    supabase
+      .from("league_standings").select("points, rank, exact_count")
+      .eq("league_id", league.id).eq("user_id", user.id).maybeSingle(),
+    supabase
+      .from("league_members").select("user_id", { count: "exact", head: true })
+      .eq("league_id", league.id),
+  ]);
+
+  return {
+    points: standing?.points ?? 0,
+    rank: standing?.rank ?? null,
+    exactCount: standing?.exact_count ?? 0,
+    memberCount: count ?? 0,
+    leagueId: league.id,
+  };
+}
+
 /** The signed-in user's profile, or null if unauthenticated. */
 export async function getSessionProfile() {
   const supabase = await createClient();

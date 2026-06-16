@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { LocaleToggle } from "@/components/i18n/LocaleToggle";
+import { getMyGlobalStanding } from "@/lib/leagues/queries";
 import { getT } from "@/lib/i18n";
 
 /** App shell for all signed-in screens: a top bar (brand + sign-in/account) and a bottom tab bar. */
@@ -16,6 +17,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
     name = data?.display_name ?? t.common.player;
   }
+  // Headline score for the always-visible points pill (zeros until first scoring run).
+  const standing = user ? await getMyGlobalStanding() : null;
 
   return (
     <div className="min-h-dvh pb-20">
@@ -26,6 +29,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span>{t.nav.brand}</span>
           </Link>
           <div className="flex items-center gap-2">
+            {standing && (
+              <Link
+                href="/leagues"
+                aria-label={t.score.points}
+                className="flex items-center gap-1 rounded-full bg-[var(--bn-gold)]/15 px-2.5 py-1 text-xs font-black text-[var(--bn-gold)] tabular-nums"
+              >
+                <span aria-hidden>★</span>
+                {standing.points}
+              </Link>
+            )}
             <LocaleToggle />
             {isAnon ? (
               <Link
