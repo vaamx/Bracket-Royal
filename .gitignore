@@ -31,3 +31,7 @@ next-env.d.ts
 *.log
 .idea/
 .vscode/
+
+# extra env backups/pulls
+.env.local*
+.env.pull
