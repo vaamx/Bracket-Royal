@@ -9,22 +9,22 @@ const T = (cluster: string): SlotSpec => ({ kind: "third", cluster: cluster.spli
 // Official 2026 Round of 32 (matches 73–88 → R32-1..16): home/away qualifier specs.
 // Third-place slots carry the cluster of groups they may draw from (FIFA's table).
 const R32_TEMPLATE: Array<[SlotSpec, SlotSpec]> = [
-  [R("A"), R("B")],      // R32-1  (M73)
-  [W("E"), T("ABCDF")],  // R32-2  (M74)
-  [W("F"), R("C")],      // R32-3  (M75)
-  [W("C"), R("F")],      // R32-4  (M76)
-  [W("I"), T("CDFGH")],  // R32-5  (M77)
-  [R("E"), R("I")],      // R32-6  (M78)
-  [W("A"), T("CEFHI")],  // R32-7  (M79)
-  [W("L"), T("EHIJK")],  // R32-8  (M80)
-  [W("D"), T("BEFIJ")],  // R32-9  (M81)
-  [W("G"), T("AEHIJ")],  // R32-10 (M82)
-  [R("K"), R("L")],      // R32-11 (M83)
-  [W("H"), R("J")],      // R32-12 (M84)
-  [W("B"), T("EFGIJ")],  // R32-13 (M85)
-  [W("J"), R("H")],      // R32-14 (M86)
-  [W("K"), T("DEIJL")],  // R32-15 (M87)
-  [R("D"), R("G")],      // R32-16 (M88)
+  [R("A"), R("B")],      // R32-1  M73: RU A vs RU B
+  [W("C"), R("F")],      // R32-2  M74: W C vs RU F
+  [W("E"), T("ABCDF")],  // R32-3  M75: W E vs best 3rd {A,B,C,D,F}
+  [W("F"), R("C")],      // R32-4  M76: W F vs RU C
+  [R("E"), R("I")],      // R32-5  M77: RU E vs RU I
+  [W("I"), T("CDFGH")],  // R32-6  M78: W I vs best 3rd {C,D,F,G,H}
+  [W("A"), T("CEFHI")],  // R32-7  M79: W A vs best 3rd {C,E,F,H,I}
+  [W("L"), T("EHIJK")],  // R32-8  M80: W L vs best 3rd {E,H,I,J,K}
+  [W("G"), T("AEHIJ")],  // R32-9  M81: W G vs best 3rd {A,E,H,I,J}
+  [W("D"), T("BEFIJ")],  // R32-10 M82: W D vs best 3rd {B,E,F,I,J}
+  [W("B"), T("EFGIJ")],  // R32-11 M83: W B vs best 3rd {E,F,G,I,J}
+  [R("K"), R("L")],      // R32-12 M84: RU K vs RU L
+  [R("D"), R("G")],      // R32-13 M85: RU D vs RU G
+  [W("H"), R("J")],      // R32-14 M86: W H vs RU J
+  [W("J"), R("H")],      // R32-15 M87: W J vs RU H
+  [W("K"), T("DEIJL")],  // R32-16 M88: W K vs best 3rd {D,E,I,J,L}
 ];
 
 // Official feeds: [homeFeederIndex, awayFeederIndex] (1-based) into each next-round match.
@@ -45,8 +45,8 @@ const QF_FEEDS: Array<[number, number]> = [
   [7, 8], // QF-4 (M100) ← R16-7, R16-8
 ];
 const SF_FEEDS: Array<[number, number]> = [
-  [1, 2], // SF-1 (M101) ← QF-1, QF-2
-  [3, 4], // SF-2 (M102) ← QF-3, QF-4
+  [1, 3], // SF-1 (M101) ← QF-1, QF-3
+  [2, 4], // SF-2 (M102) ← QF-2, QF-4
 ];
 
 /** Build the full 32-match knockout structure with the official feeds tree. */

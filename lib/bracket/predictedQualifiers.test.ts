@@ -29,11 +29,15 @@ describe("buildPredictedR32", () => {
   it("slots the user's predicted winners & runners into the official R32 ties", () => {
     const r32 = buildPredictedR32(groups);
     expect(r32.size).toBe(16);
-    expect(r32.get("R32-1")).toEqual({ homeTeamId: "A2", awayTeamId: "B2" });  // 2A vs 2B
-    expect(r32.get("R32-3")).toEqual({ homeTeamId: "F1", awayTeamId: "C2" });  // 1F vs 2C
-    expect(r32.get("R32-6")).toEqual({ homeTeamId: "E2", awayTeamId: "I2" });  // 2E vs 2I
-    expect(r32.get("R32-7")!.homeTeamId).toBe("A1");                            // 1A (away is a third)
-    expect(r32.get("R32-16")).toEqual({ homeTeamId: "D2", awayTeamId: "G2" }); // 2D vs 2G
+    expect(r32.get("R32-1")).toEqual({ homeTeamId: "A2", awayTeamId: "B2" });  // M73 RU A v RU B
+    expect(r32.get("R32-2")).toEqual({ homeTeamId: "C1", awayTeamId: "F2" });  // M74 W C v RU F
+    expect(r32.get("R32-4")).toEqual({ homeTeamId: "F1", awayTeamId: "C2" });  // M76 W F v RU C
+    expect(r32.get("R32-5")).toEqual({ homeTeamId: "E2", awayTeamId: "I2" });  // M77 RU E v RU I
+    expect(r32.get("R32-13")).toEqual({ homeTeamId: "D2", awayTeamId: "G2" }); // M85 RU D v RU G
+    expect(r32.get("R32-14")).toEqual({ homeTeamId: "H1", awayTeamId: "J2" }); // M86 W H v RU J
+    expect(r32.get("R32-3")!.homeTeamId).toBe("E1");  // M75 W E v 3rd
+    expect(r32.get("R32-7")!.homeTeamId).toBe("A1");  // M79 W A v 3rd
+    expect(r32.get("R32-16")!.homeTeamId).toBe("K1"); // M88 W K v 3rd
   });
 
   it("uses the 8 best predicted third-placed teams, all distinct", () => {

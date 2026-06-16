@@ -27,14 +27,14 @@ describe("advanceActualBracket", () => {
   });
 
   it("advances QF winners into the correct SF slots", () => {
-    // QF-1 → SF-1 home, QF-2 → SF-1 away; QF-3 → SF-2 home, QF-4 → SF-2 away.
+    // Official: SF-1 ← QF-1 (home) + QF-3 (away); SF-2 ← QF-2 (home) + QF-4 (away).
     const slots = advanceActualBracket([
       { matchId: "QF-1", winnerTeamId: "W1", loserTeamId: "L1" },
       { matchId: "QF-2", winnerTeamId: "W2", loserTeamId: "L2" },
       { matchId: "QF-3", winnerTeamId: "W3", loserTeamId: "L3" },
       { matchId: "QF-4", winnerTeamId: "W4", loserTeamId: "L4" },
     ]);
-    expect(slots.get("SF-1")).toEqual({ homeTeamId: "W1", awayTeamId: "W2" });
-    expect(slots.get("SF-2")).toEqual({ homeTeamId: "W3", awayTeamId: "W4" });
+    expect(slots.get("SF-1")).toEqual({ homeTeamId: "W1", awayTeamId: "W3" });
+    expect(slots.get("SF-2")).toEqual({ homeTeamId: "W2", awayTeamId: "W4" });
   });
 });
