@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import type { PlayerLite } from "@/lib/players/queries";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -15,7 +16,10 @@ export function PickRow({
       <div className="flex items-center gap-2">
         <button onClick={onSetBoot} disabled={locked} aria-label={t.scorers.setBoot} className={"text-lg " + (isBoot ? "" : "opacity-30 hover:opacity-70")}>{isBoot ? "🥇" : "☆"}</button>
         <span className="text-lg" aria-hidden>{player.flag ?? "🏳️"}</span>
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold">{player.name} <span className="text-white/40">{player.teamId}</span></span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+          <Link href={`/players/${player.id}`} className="hover:underline">{player.name}</Link>
+          {" "}<span className="text-white/40">{player.teamId}</span>
+        </span>
         {actualGoals != null && <span className="text-xs text-white/55">{t.scorers.goals(actualGoals)}{inTop10 ? " ✓" : ""}</span>}
         {!locked && <button onClick={onRemove} aria-label={t.scorers.remove} className="text-xs font-bold text-red-400/80">✕</button>}
       </div>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PlayerLite } from "@/lib/players/queries";
 import type { Dictionary } from "@/lib/i18n";
 
@@ -7,7 +8,13 @@ export function ActualTop10({ rows, t }: { rows: PlayerLite[]; t: Dictionary }) 
     <ul className="space-y-2">
       {rows.map((p, i) => (
         <li key={p.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <span className="flex items-center gap-3"><span className="w-5 text-center font-extrabold text-[var(--bn-gold)]">{i + 1}</span><span aria-hidden>{p.flag ?? "🏳️"}</span><span className="text-sm font-semibold">{p.name}</span></span>
+          <span className="flex items-center gap-3">
+            <span className="w-5 text-center font-extrabold text-[var(--bn-gold)]">{i + 1}</span>
+            <Link href={`/players/${p.id}`} className="flex items-center gap-2 hover:opacity-80">
+              <span aria-hidden>{p.flag ?? "🏳️"}</span>
+              <span className="text-sm font-semibold">{p.name}</span>
+            </Link>
+          </span>
           <span className="text-sm font-black tabular-nums text-[var(--bn-gold)]">{p.goals}</span>
         </li>
       ))}
