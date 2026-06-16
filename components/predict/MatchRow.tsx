@@ -4,6 +4,7 @@ import { ScoreInput } from "@/components/predict/ScoreInput";
 import { KickoffTime } from "@/components/predict/KickoffTime";
 import type { PredictMatch, PredictTeam } from "@/lib/predictions/types";
 import { outcomeOf } from "@/lib/math";
+import { useI18n } from "@/lib/i18n/provider";
 
 export function MatchRow({
   match,
@@ -18,6 +19,7 @@ export function MatchRow({
   locked: boolean;
   onScore: (side: "home" | "away", value: number | null) => void;
 }) {
+  const { t } = useI18n();
   const final = match.status === "final" && match.homeScore !== null && match.awayScore !== null;
   const predicted = match.predictedHome !== null && match.predictedAway !== null;
 
@@ -62,10 +64,10 @@ export function MatchRow({
         </span>
         {match.status === "live" ? (
           <span className="flex items-center gap-1 text-red-400">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" /> Live
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" /> {t.predict.live}
           </span>
         ) : !final && locked ? (
-          <span className="text-white/40">🔒 Locked</span>
+          <span className="text-white/40">🔒 {t.predict.locked}</span>
         ) : null}
       </div>
 
@@ -103,16 +105,16 @@ export function MatchRow({
       </div>
 
       {lead === "draw" && (
-        <p className="mt-1.5 text-center text-[11px] font-bold uppercase tracking-wide text-white/40">Draw</p>
+        <p className="mt-1.5 text-center text-[11px] font-bold uppercase tracking-wide text-white/40">{t.predict.draw}</p>
       )}
 
       {final && (
         <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
-          <span className="rounded bg-white/5 px-1.5 py-0.5 font-bold text-white/50">FULL TIME</span>
+          <span className="rounded bg-white/5 px-1.5 py-0.5 font-bold text-white/50">{t.predict.fullTime}</span>
           {predicted ? (
             <>
               <span className="text-white/45">
-                your pick <span className="font-bold tabular-nums text-white/75">{match.predictedHome}–{match.predictedAway}</span>
+                {t.predict.yourPick} <span className="font-bold tabular-nums text-white/75">{match.predictedHome}–{match.predictedAway}</span>
               </span>
               <span
                 className={
@@ -120,11 +122,11 @@ export function MatchRow({
                   (verdict === "exact" ? "text-[var(--bn-gold)]" : verdict === "result" ? "text-[var(--bn-success)]" : "text-red-400")
                 }
               >
-                {verdict === "exact" ? "🎯 exact +5" : verdict === "result" ? "✓ right result +2" : "✗ missed"}
+                {verdict === "exact" ? t.predict.exactPts : verdict === "result" ? t.predict.resultPts : t.predict.missed}
               </span>
             </>
           ) : (
-            <span className="text-white/30">you didn&apos;t predict this one</span>
+            <span className="text-white/30">{t.predict.didntPredict}</span>
           )}
         </div>
       )}

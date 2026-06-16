@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n/provider";
 
 export function InviteShare({ code, leagueName }: { code: string; leagueName: string }) {
+  const { t, locale } = useI18n();
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
   function joinUrl() {
@@ -23,7 +25,10 @@ export function InviteShare({ code, leagueName }: { code: string; leagueName: st
 
   async function share() {
     const url = joinUrl();
-    const text = `Join my World Cup 2026 bracket league "${leagueName}" — code ${code}`;
+    const text =
+      locale === "es"
+        ? `Únete a mi liga del Mundial 2026 "${leagueName}" — código ${code}`
+        : `Join my World Cup 2026 bracket league "${leagueName}" — code ${code}`;
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await navigator.share({ title: "Bracket Royale", text, url });
@@ -37,15 +42,15 @@ export function InviteShare({ code, leagueName }: { code: string; leagueName: st
 
   return (
     <div className="rounded-2xl border border-[var(--bn-gold)]/30 bg-gradient-to-b from-[var(--bn-gold)]/10 to-transparent p-4">
-      <p className="text-xs font-bold uppercase tracking-[1.5px] text-[var(--bn-gold)]">Invite friends</p>
-      <p className="mt-1 text-sm text-white/65">Share this code or link — friends join instantly and appear on the leaderboard.</p>
+      <p className="text-xs font-bold uppercase tracking-[1.5px] text-[var(--bn-gold)]">{t.leagues.inviteTitle}</p>
+      <p className="mt-1 text-sm text-white/65">{t.leagues.inviteSub}</p>
 
       <button
         onClick={() => copy("code")}
         className="mt-3 flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 transition-colors hover:bg-white/[0.07]"
       >
         <span className="font-mono text-2xl font-black tracking-[4px] text-[var(--bn-gold)]">{code}</span>
-        <span className="text-xs font-bold text-white/55">{copied === "code" ? "Copied ✓" : "Tap to copy"}</span>
+        <span className="text-xs font-bold text-white/55">{copied === "code" ? t.leagues.copied : t.leagues.tapToCopy}</span>
       </button>
 
       <div className="mt-2 flex gap-2">
@@ -53,13 +58,13 @@ export function InviteShare({ code, leagueName }: { code: string; leagueName: st
           onClick={share}
           className="flex-1 rounded-full bg-gradient-to-r from-[#d4af37] to-[#f4d56a] px-4 py-2.5 text-sm font-extrabold text-[#0a1428]"
         >
-          Share invite
+          {t.leagues.shareInvite}
         </button>
         <button
           onClick={() => copy("link")}
           className="rounded-full border border-white/15 px-4 py-2.5 text-sm font-bold text-white/75 hover:bg-white/5"
         >
-          {copied === "link" ? "Link copied ✓" : "Copy link"}
+          {copied === "link" ? t.leagues.linkCopied : t.leagues.copyLink}
         </button>
       </div>
     </div>

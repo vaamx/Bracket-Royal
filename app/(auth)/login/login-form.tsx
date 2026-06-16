@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useI18n } from "@/lib/i18n/provider";
 
 /**
  * Optional sign-in. When the visitor is currently anonymous we LINK the new
@@ -17,6 +18,7 @@ export function LoginForm({ isAnonymous }: { isAnonymous: boolean }) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useI18n();
 
   const redirectTo =
     typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
@@ -47,20 +49,16 @@ export function LoginForm({ isAnonymous }: { isAnonymous: boolean }) {
     <div className="w-full">
       <div className="mb-8 text-center">
         <div className="mb-4 text-5xl drop-shadow-[0_8px_30px_rgba(212,175,55,0.35)]">🏆</div>
-        <p className="text-xs font-bold tracking-[3px] text-[var(--bn-accent)]">SAVE YOUR PROGRESS</p>
-        <h1 className="mt-2 text-3xl font-black">Sign in to compete</h1>
-        <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-white/55">
-          Keep your picks across devices, join private leagues with friends, and put your name on the leaderboard.
-        </p>
+        <p className="text-xs font-bold tracking-[3px] text-[var(--bn-accent)]">{t.login.eyebrow}</p>
+        <h1 className="mt-2 text-3xl font-black">{t.login.title}</h1>
+        <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-white/55">{t.login.subtitle}</p>
       </div>
 
       {sent ? (
         <div className="rounded-2xl border border-[var(--bn-success)]/30 bg-[var(--bn-success)]/10 p-5 text-center">
           <div className="text-3xl">📬</div>
-          <p className="mt-2 font-bold text-[var(--bn-success)]">Check your email</p>
-          <p className="mt-1 text-sm text-white/60">
-            We sent a sign-in link to <span className="font-semibold text-white/80">{email}</span>.
-          </p>
+          <p className="mt-2 font-bold text-[var(--bn-success)]">{t.login.checkEmail}</p>
+          <p className="mt-1 text-sm text-white/60">{t.login.sentTo(email)}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -69,23 +67,23 @@ export function LoginForm({ isAnonymous }: { isAnonymous: boolean }) {
             className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/[0.04] font-bold text-white/90 transition-colors hover:bg-white/[0.08] active:scale-[0.98]"
           >
             <GoogleGlyph />
-            Continue with Google
+            {t.login.google}
           </button>
 
           <div className="flex items-center gap-3 text-[11px] font-semibold text-white/30">
-            <span className="h-px flex-1 bg-white/10" /> OR <span className="h-px flex-1 bg-white/10" />
+            <span className="h-px flex-1 bg-white/10" /> {t.login.or} <span className="h-px flex-1 bg-white/10" />
           </div>
 
           <form onSubmit={sendEmailLink} className="space-y-3">
             <Input
               type="email"
               required
-              placeholder="you@example.com"
+              placeholder={t.login.emailPlaceholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Sending…" : "Email me a sign-in link"}
+              {loading ? t.login.sending : t.login.emailCta}
             </Button>
           </form>
 
@@ -95,7 +93,7 @@ export function LoginForm({ isAnonymous }: { isAnonymous: boolean }) {
 
       <div className="mt-8 text-center">
         <Link href="/predict" className="text-sm font-semibold text-white/45 transition-colors hover:text-white/75">
-          Skip — keep predicting as a guest →
+          {t.login.skipGuest}
         </Link>
       </div>
     </div>
