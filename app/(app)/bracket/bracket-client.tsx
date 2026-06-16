@@ -142,16 +142,27 @@ export function BracketClient({ data }: { data: BracketData }) {
       </div>
 
       {!seeded && (
-        <div className="rounded-2xl border border-[var(--bn-gold)]/30 bg-[var(--bn-gold)]/[0.07] p-3 text-center">
-          <p className="text-sm text-white/75">
-            This is your empty bracket. It fills from <span className="font-semibold text-white">your group predictions</span> —
-            including where the best third-placed teams land — once <span className="font-semibold text-white">every group</span> is called.
-          </p>
+        <div className="rounded-2xl border border-[var(--bn-gold)]/30 bg-[var(--bn-gold)]/[0.07] p-4">
+          <p className="text-center text-sm font-bold text-white">How your bracket works</p>
+          <ol className="mt-3 space-y-2 text-sm text-white/75">
+            <li className="flex gap-2.5">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--bn-gold)] text-[11px] font-black text-[#0a1428]">1</span>
+              <span>Predict all <span className="font-semibold text-white">12 groups</span> on the Predict tab.</span>
+            </li>
+            <li className="flex gap-2.5">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--bn-gold)] text-[11px] font-black text-[#0a1428]">2</span>
+              <span>Your qualifiers — top 2 plus the best third-placed teams — <span className="font-semibold text-white">fill the Round of 32</span> below.</span>
+            </li>
+            <li className="flex gap-2.5">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--bn-gold)] text-[11px] font-black text-[#0a1428]">3</span>
+              <span><span className="font-semibold text-white">Tap a team to advance them</span> — winners flow into the next round all the way to the final.</span>
+            </li>
+          </ol>
           <Link
             href="/predict"
-            className="mt-3 inline-block rounded-full bg-gradient-to-r from-[#d4af37] to-[#f4d56a] px-5 py-2 text-xs font-extrabold text-[#0a1428]"
+            className="mt-4 block rounded-full bg-gradient-to-r from-[#d4af37] to-[#f4d56a] px-5 py-2.5 text-center text-sm font-extrabold text-[#0a1428]"
           >
-            {data.groupsReady > 0 ? "Finish your group picks →" : "Predict the group stage →"}
+            {data.groupsReady > 0 ? `Finish your group picks (${data.groupsReady}/${data.groupsTotal}) →` : "Start predicting the group stage →"}
           </Link>
         </div>
       )}
@@ -160,7 +171,7 @@ export function BracketClient({ data }: { data: BracketData }) {
         <>
           {seeded && (
             <p className="text-xs text-white/45">
-              Tap a team to advance them — winners flow through the whole bracket. Scroll sideways to reach the final.
+              Tap a team to advance them — winners flow through the whole bracket. Scroll sideways to reach the final, or switch to <span className="font-semibold text-white/70">Round by round</span> above for bigger one-tie-at-a-time picking.
             </p>
           )}
           <BracketTree view={view} teams={data.teams} locks={locks} onPick={onPick} />
