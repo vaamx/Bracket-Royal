@@ -54,3 +54,27 @@ export async function scorersLocked(): Promise<boolean> {
   const now = Date.now();
   return (ko ?? []).some((m) => m.status === "final" || m.status === "live" || (m.lock_at !== null && new Date(m.lock_at).getTime() <= now));
 }
+
+export interface PlayerProfile {
+  id: string; name: string; teamId: string | null; teamName: string | null; flag: string | null;
+  position: string | null; goals: number; scorerRank: number | null;
+  inMyTop10: boolean; isMyGoldenBoot: boolean;
+}
+
+export async function getPlayerProfile(id: string): Promise<PlayerProfile | null> {
+  const supabase = await createClient();
+  const { data: p } = await supabase.from("players").select("id, name, team_id, position, goals, scorer_rank").eq("id", id).maybeSingle();
+  if (!p) return null;
+  let teamName: string | null = null, flag: string | null = null;
+  if (p.team_id) {
+    const { data: team } = await supabase.from("teams").select("name, flag").eq("id", p.team_id).maybeSingle();
+    teamName = team?.name ?? null; flag = team?.flag ?? null;
+  }
+  let inMyTop10 = false, isMyGoldenBoot = false;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: pick } = await supabase.from("scorer_predictions").select("is_golden_boot").eq("user_id", user.id).eq("player_id", id).maybeSingle();
+    if (pick) { inMyTop10 = true; isMyGoldenBoot = pick.is_golden_boot; }
+  }
+  return { id: p.id, name: p.name, teamId: p.team_id, teamName, flag, position: p.position, goals: p.goals, scorerRank: p.scorer_rank, inMyTop10, isMyGoldenBoot };
+}
