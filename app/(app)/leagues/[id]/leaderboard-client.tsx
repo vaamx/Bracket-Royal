@@ -5,7 +5,15 @@ import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import type { StandingRow } from "@/lib/leaderboard/queries";
 
-export function LeaderboardClient({ leagueId, initialRows }: { leagueId: string; initialRows: StandingRow[] }) {
+const MEDALS = ["🥇", "🥈", "🥉"];
+
+export function LeaderboardClient({
+  leagueId, initialRows, meId,
+}: {
+  leagueId: string;
+  initialRows: StandingRow[];
+  meId?: string | null;
+}) {
   const [rows, setRows] = useState<StandingRow[]>(initialRows);
 
   useEffect(() => {
@@ -44,28 +52,47 @@ export function LeaderboardClient({ leagueId, initialRows }: { leagueId: string;
   }, [leagueId]);
 
   if (rows.length === 0) {
-    return <p className="py-10 text-center text-sm text-white/50">No scores yet — predictions are graded as results come in.</p>;
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-10 text-center">
+        <div className="text-3xl">📊</div>
+        <p className="mt-2 text-sm text-white/50">No scores yet — predictions are graded as results come in.</p>
+      </div>
+    );
   }
 
   return (
     <ul className="space-y-2">
-      {rows.map((r, i) => (
-        <motion.li
-          key={r.userId}
-          layout
-          transition={{ type: "spring", stiffness: 420, damping: 30 }}
-          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
-        >
-          <span className="flex items-center gap-3">
-            <span className="w-6 text-center font-extrabold text-[var(--bn-gold)]">{i + 1}</span>
-            <span className="font-semibold">{r.displayName}</span>
-          </span>
-          <span className="flex items-center gap-3 text-sm">
-            <span className="text-white/40">{r.exactCount} exact</span>
-            <span className="font-black tabular-nums text-[var(--bn-gold)]">{r.points}</span>
-          </span>
-        </motion.li>
-      ))}
+      {rows.map((r, i) => {
+        const isMe = meId != null && r.userId === meId;
+        const medal = MEDALS[i];
+        return (
+          <motion.li
+            key={r.userId}
+            layout
+            transition={{ type: "spring", stiffness: 420, damping: 30 }}
+            className={
+              "flex items-center justify-between rounded-xl border px-4 py-3 " +
+              (isMe
+                ? "border-[var(--bn-gold)]/50 bg-[var(--bn-gold)]/10"
+                : "border-white/10 bg-white/[0.03]")
+            }
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="grid w-7 shrink-0 place-items-center text-center text-base font-extrabold text-[var(--bn-gold)]">
+                {medal ?? i + 1}
+              </span>
+              <span className="truncate font-semibold">
+                {r.displayName}
+                {isMe && <span className="ml-1.5 text-[10px] font-bold text-[var(--bn-gold)]">YOU</span>}
+              </span>
+            </span>
+            <span className="flex shrink-0 items-center gap-3 text-sm">
+              <span className="text-white/40">{r.exactCount} exact</span>
+              <span className="font-black tabular-nums text-[var(--bn-gold)]">{r.points}</span>
+            </span>
+          </motion.li>
+        );
+      })}
     </ul>
   );
 }
