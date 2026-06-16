@@ -16,6 +16,15 @@ describe("toPlayerRows", () => {
     const rows = toPlayerRows({ teams: [{ tla: null, squad: [{ id: 9, name: "X" }] }, { tla: "BRA", squad: [{ id: null, name: "Y" }] }] });
     expect(rows).toEqual([]);
   });
+  it("remaps team_id via the resolver (name fallback) and skips unresolved teams", () => {
+    const payload = { teams: [
+      { tla: "URU", name: "Uruguay", squad: [{ id: 10, name: "Some Uruguayan" }] },
+      { tla: "XXX", name: "Unknown FC", squad: [{ id: 11, name: "Nobody" }] },
+    ] };
+    const resolve = (tla: string, name: string) => (tla === "URU" || name === "Uruguay" ? "URY" : null);
+    const rows = toPlayerRows(payload, resolve);
+    expect(rows).toEqual([{ id: "10", name: "Some Uruguayan", team_id: "URY", position: null, is_contender: false }]);
+  });
 });
 
 describe("parseScorerGoals", () => {

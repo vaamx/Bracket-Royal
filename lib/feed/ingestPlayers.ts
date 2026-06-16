@@ -9,18 +9,29 @@ export const CONTENDER_NAMES = [
 ];
 const CONTENDERS = new Set(CONTENDER_NAMES);
 
-interface FdSquadTeam { tla: string | null; squad?: Array<{ id: number | null; name: string; position?: string | null }> }
+interface FdSquadTeam { tla: string | null; name?: string; squad?: Array<{ id: number | null; name: string; position?: string | null }> }
 interface FdTeamsPayload { teams?: FdSquadTeam[] }
 
 export interface PlayerRow { id: string; name: string; team_id: string; position: string | null; is_contender: boolean; }
 
-export function toPlayerRows(payload: FdTeamsPayload): PlayerRow[] {
+/**
+ * Flatten squads into player rows. `resolveTeamId(tla, name)` maps the feed's
+ * team tla to our `teams.id`; football-data sometimes uses a different code than
+ * we stored (e.g. URU vs URY), so the caller resolves by name as a fallback.
+ * Teams (and their players) that can't be resolved are skipped.
+ */
+export function toPlayerRows(
+  payload: FdTeamsPayload,
+  resolveTeamId: (tla: string, name: string) => string | null = (tla) => tla
+): PlayerRow[] {
   const out: PlayerRow[] = [];
   for (const t of payload.teams ?? []) {
     if (!t.tla) continue;
+    const teamId = resolveTeamId(t.tla, t.name ?? "");
+    if (!teamId) continue;
     for (const p of t.squad ?? []) {
       if (p.id == null) continue;
-      out.push({ id: String(p.id), name: p.name, team_id: t.tla, position: p.position ?? null, is_contender: CONTENDERS.has(p.name) });
+      out.push({ id: String(p.id), name: p.name, team_id: teamId, position: p.position ?? null, is_contender: CONTENDERS.has(p.name) });
     }
   }
   return out;
@@ -48,7 +59,16 @@ async function fdGet(path: string, fetchImpl: typeof fetch): Promise<unknown> {
 
 export async function ingestPlayers(admin: SupabaseClient, fetchImpl: typeof fetch = fetch): Promise<{ players: number }> {
   const payload = (await fdGet("teams", fetchImpl)) as FdTeamsPayload;
-  const rows = toPlayerRows(payload);
+
+  // Resolve feed team codes to our teams.id: keep the tla when it's a real id,
+  // else map by team name (handles URU→URY-style code differences).
+  const { data: teams } = await admin.from("teams").select("id, name");
+  const validIds = new Set((teams ?? []).map((t) => t.id as string));
+  const idByName = new Map((teams ?? []).map((t) => [t.name as string, t.id as string]));
+  const resolveTeamId = (tla: string, name: string): string | null =>
+    validIds.has(tla) ? tla : idByName.get(name) ?? null;
+
+  const rows = toPlayerRows(payload, resolveTeamId);
   if (rows.length) {
     const { error } = await admin.from("players").upsert(rows, { onConflict: "id" });
     if (error) throw error;
