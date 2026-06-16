@@ -9,6 +9,7 @@ import { stageMatchIds } from "@/lib/bracket/structure";
 import { TieCard } from "@/components/bracket/TieCard";
 import { RoundStepper } from "@/components/bracket/RoundStepper";
 import { BracketTree } from "@/components/bracket/BracketTree";
+import { ShareBracket } from "@/components/bracket/ShareBracket";
 import type { BracketData } from "@/lib/bracket/queries";
 import { useCelebration } from "@/lib/celebrate/useCelebration";
 
@@ -166,6 +167,19 @@ export function BracketClient({ data }: { data: BracketData }) {
           </Link>
         </div>
       )}
+
+      {seeded && champion && (() => {
+        const finalView = view["F-1"];
+        const runnerUpId = finalView?.homeTeamId === champion ? finalView?.awayTeamId : finalView?.homeTeamId;
+        return (
+          <ShareBracket
+            championName={data.teams[champion]?.name ?? champion}
+            championFlag={data.teams[champion]?.flag ?? ""}
+            runnerUpName={runnerUpId ? data.teams[runnerUpId]?.name : undefined}
+            runnerUpFlag={runnerUpId ? data.teams[runnerUpId]?.flag ?? "" : undefined}
+          />
+        );
+      })()}
 
       {effectiveMode === "tree" ? (
         <>
