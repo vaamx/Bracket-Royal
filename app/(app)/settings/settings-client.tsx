@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { enablePush, savePrefs, pushSupported } from "@/lib/notify/subscribe";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +19,10 @@ export function SettingsClient({
   const [email, setEmail] = useState(initialEmail);
   const [addr, setAddr] = useState(initialAddr ?? "");
   const [status, setStatus] = useState<string | null>(null);
+  // pushSupported() reads navigator/window → differs SSR vs client. Resolve it
+  // after mount so SSR and first client render agree (no hydration mismatch).
+  const [pushOk, setPushOk] = useState<boolean | null>(null);
+  useEffect(() => setPushOk(pushSupported()), []);
   const { t } = useI18n();
 
   async function togglePush() {
@@ -43,10 +47,10 @@ export function SettingsClient({
       <Card className="space-y-3">
         <h2 className="font-bold">{t.settings.notifPush}</h2>
         <p className="text-sm text-white/60">{t.settings.notifPushDesc}</p>
-        {pushSupported() ? (
-          <Button onClick={togglePush} variant={push ? "ghost" : "gold"}>{push ? t.settings.pushDisable : t.settings.pushEnable}</Button>
-        ) : (
+        {pushOk === false ? (
           <p className="text-xs text-white/40">{t.settings.pushUnsupported}</p>
+        ) : (
+          <Button onClick={togglePush} variant={push ? "ghost" : "gold"}>{push ? t.settings.pushDisable : t.settings.pushEnable}</Button>
         )}
       </Card>
 

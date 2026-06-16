@@ -19,6 +19,18 @@ export async function joinLeagueForm(formData: FormData): Promise<void> {
   if ("ok" in res && res.id) redirect(`/leagues/${res.id}`);
 }
 
+/** Join via the invite landing, setting a display name first (everyone gets a name). */
+export async function joinWithNameForm(formData: FormData): Promise<void> {
+  const name = String(formData.get("display_name") ?? "").trim();
+  if (name) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await supabase.from("profiles").update({ display_name: name.slice(0, 24) }).eq("id", user.id);
+  }
+  const res = await joinLeague(formData);
+  if ("ok" in res && res.id) redirect(`/leagues/${res.id}`);
+}
+
 export async function setDisplayName(formData: FormData) {
   const name = String(formData.get("display_name") ?? "").trim();
   if (!name) return { error: "Name is required" };

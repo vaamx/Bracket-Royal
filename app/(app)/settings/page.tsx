@@ -5,6 +5,7 @@ import { signOut } from "@/app/(app)/leagues/actions";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { getT } from "@/lib/i18n";
+import { NameEditor } from "@/components/settings/NameEditor";
 import { SettingsClient } from "./settings-client";
 
 export default async function SettingsPage() {
@@ -40,6 +41,9 @@ export default async function SettingsPage() {
             <p className="truncate text-xs text-white/45">{subtitle}</p>
           </div>
         </div>
+
+        <NameEditor initialName={isAnon && name === t.common.guest ? "" : name} />
+
         {isAnon ? (
           <>
             <p className="text-sm text-white/60">{t.settings.signInToSave}</p>

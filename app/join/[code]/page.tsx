@@ -2,7 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getT } from "@/lib/i18n";
-import { joinLeagueForm } from "@/app/(app)/leagues/actions";
+import { getSessionProfile } from "@/lib/leagues/queries";
+import { joinWithNameForm } from "@/app/(app)/leagues/actions";
+import { Input } from "@/components/ui/Input";
 
 interface LeaguePreview {
   id: string;
@@ -42,7 +44,7 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
   const { code } = await params;
   const normalized = code.toUpperCase();
   const { t } = await getT();
-  const preview = await getPreview(normalized);
+  const [preview, profile] = await Promise.all([getPreview(normalized), getSessionProfile()]);
 
   if (!preview) {
     return (
@@ -67,8 +69,12 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
       <p className="mt-1 text-sm text-white/45">{t.common.players(preview.memberCount)}</p>
       <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-white/65">{t.join.sub}</p>
 
-      <form action={joinLeagueForm} className="mt-7 w-full">
+      <form action={joinWithNameForm} className="mt-7 w-full space-y-3">
         <input type="hidden" name="code" value={normalized} />
+        <div className="text-left">
+          <label className="mb-1.5 block text-xs font-bold text-white/55">{t.join.namePrompt}</label>
+          <Input name="display_name" defaultValue={profile?.display_name ?? ""} placeholder={t.onboarding.namePlaceholder} maxLength={24} required />
+        </div>
         <button
           type="submit"
           className="inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#d4af37] to-[#f4d56a] text-base font-black text-[#0a1428] shadow-[0_10px_30px_rgba(212,175,55,0.35)] transition-transform active:scale-[0.98]"
