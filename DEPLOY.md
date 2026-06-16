@@ -57,3 +57,6 @@ vercel deploy --prod
 2. Ingest players + current scorer goals against prod:
    `npm run ingest:players`   (uses .env.local hosted values)
 3. Merge `feat-top-scorers` → `main` (auto-deploys to Vercel).
+
+## Player search (migration 0007)
+Supabase SQL Editor → paste `supabase/PROD_SETUP_0007.sql` → Run. (No re-ingest needed.)

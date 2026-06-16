@@ -17,8 +17,15 @@ export async function searchPlayers(q: string): Promise<PlayerLite[]> {
   const supabase = await createClient();
   const term = q.trim();
   if (term.length < 2) return [];
-  const { data } = await supabase.from("players").select("id, name, team_id, goals, scorer_rank").ilike("name", `%${term}%`).order("goals", { ascending: false }).limit(20);
-  return withFlags(data ?? []);
+  const { data, error } = await supabase.rpc("search_players", { q: term });
+  if (error) {
+    // Fallback (accent-sensitive) if the unaccent RPC isn't deployed yet (migration 0007).
+    const { data: fb } = await supabase
+      .from("players").select("id, name, team_id, goals, scorer_rank")
+      .ilike("name", `%${term}%`).order("goals", { ascending: false }).limit(20);
+    return withFlags(fb ?? []);
+  }
+  return withFlags((data ?? []) as { id: string; name: string; team_id: string | null; goals: number; scorer_rank: number | null }[]);
 }
 
 export async function getContenders(): Promise<PlayerLite[]> {
@@ -53,4 +60,28 @@ export async function scorersLocked(): Promise<boolean> {
   const { data: ko } = await supabase.from("matches").select("status, lock_at").in("stage", ["r32", "r16", "qf", "sf", "final", "third"]);
   const now = Date.now();
   return (ko ?? []).some((m) => m.status === "final" || m.status === "live" || (m.lock_at !== null && new Date(m.lock_at).getTime() <= now));
+}
+
+export interface PlayerProfile {
+  id: string; name: string; teamId: string | null; teamName: string | null; flag: string | null;
+  position: string | null; goals: number; scorerRank: number | null;
+  inMyTop10: boolean; isMyGoldenBoot: boolean;
+}
+
+export async function getPlayerProfile(id: string): Promise<PlayerProfile | null> {
+  const supabase = await createClient();
+  const { data: p } = await supabase.from("players").select("id, name, team_id, position, goals, scorer_rank").eq("id", id).maybeSingle();
+  if (!p) return null;
+  let teamName: string | null = null, flag: string | null = null;
+  if (p.team_id) {
+    const { data: team } = await supabase.from("teams").select("name, flag").eq("id", p.team_id).maybeSingle();
+    teamName = team?.name ?? null; flag = team?.flag ?? null;
+  }
+  let inMyTop10 = false, isMyGoldenBoot = false;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: pick } = await supabase.from("scorer_predictions").select("is_golden_boot").eq("user_id", user.id).eq("player_id", id).maybeSingle();
+    if (pick) { inMyTop10 = true; isMyGoldenBoot = pick.is_golden_boot; }
+  }
+  return { id: p.id, name: p.name, teamId: p.team_id, teamName, flag, position: p.position, goals: p.goals, scorerRank: p.scorer_rank, inMyTop10, isMyGoldenBoot };
 }

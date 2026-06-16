@@ -187,6 +187,8 @@ export const en = {
     noPicks: "No revealed picks yet — they appear once matches kick off.",
     theirPick: "their pick",
     ftShort: "FT",
+    scorerPicksTitle: "Their Top Scorers",
+    goldenBootTag: "Golden Boot",
   },
   settings: {
     eyebrow: "ACCOUNT",
@@ -255,6 +257,17 @@ export const en = {
     errLocked: "Picks are locked.",
     errGeneric: "Something went wrong — try again.",
     saved: "Saved",
+  },
+  player: {
+    eyebrow: "PLAYER",
+    position: "Position",
+    wcGoals: "World Cup goals",
+    rank: (n: number) => `#${n} scorer`,
+    unranked: "No goals yet",
+    onYourTop10: "On your Top 10",
+    yourGoldenBoot: "Your Golden Boot 🥇",
+    notFound: "Player not found",
+    back: "Back",
   },
   meta: {
     title: "Bracket Royale · World Cup 2026 Predictions",

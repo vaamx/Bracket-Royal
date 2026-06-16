@@ -189,6 +189,8 @@ export const es: Dictionary = {
     noPicks: "Aún no hay pronósticos visibles — aparecen cuando empiezan los partidos.",
     theirPick: "su pronóstico",
     ftShort: "FINAL",
+    scorerPicksTitle: "Sus goleadores",
+    goldenBootTag: "Bota de Oro",
   },
   settings: {
     eyebrow: "CUENTA",
@@ -257,6 +259,17 @@ export const es: Dictionary = {
     errLocked: "Las elecciones están bloqueadas.",
     errGeneric: "Algo salió mal — inténtalo de nuevo.",
     saved: "Guardado",
+  },
+  player: {
+    eyebrow: "JUGADOR",
+    position: "Posición",
+    wcGoals: "Goles en el Mundial",
+    rank: (n: number) => `#${n} goleador`,
+    unranked: "Aún sin goles",
+    onYourTop10: "En tu Top 10",
+    yourGoldenBoot: "Tu Bota de Oro 🥇",
+    notFound: "Jugador no encontrado",
+    back: "Atrás",
   },
   meta: {
     title: "Bracket Royale · Predicciones del Mundial 2026",
