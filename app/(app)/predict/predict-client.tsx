@@ -1,14 +1,19 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { GroupPredictor } from "@/components/predict/GroupPredictor";
 import { GroupStepper } from "@/components/predict/GroupStepper";
 import { Button } from "@/components/ui/Button";
+import { useCelebration } from "@/lib/celebrate/useCelebration";
 import type { PredictGroup, PredictMatch } from "@/lib/predictions/types";
+
+const isPicked = (m: PredictMatch) => m.predictedHome !== null && m.predictedAway !== null;
 
 export function PredictClient({ groups: initial, userId }: { groups: PredictGroup[]; userId: string }) {
   const supabase = useMemo(() => createClient(), []);
+  const celebrate = useCelebration();
   const [groups, setGroups] = useState<PredictGroup[]>(initial);
   const [active, setActive] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -18,14 +23,22 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
 
   const labels = groups.map((g) => g.label);
 
-  // Recomputed from the live (client) group state, so progress updates as you type.
-  const completed = useMemo(() => {
-    const out: Record<string, boolean> = {};
+  // Per-group progress, recomputed from live client state so it updates as you type.
+  const progress = useMemo(() => {
+    const out: Record<string, { done: number; total: number }> = {};
     for (const g of groups) {
-      out[g.label] = g.matches.length > 0 && g.matches.every((m) => m.predictedHome !== null && m.predictedAway !== null);
+      out[g.label] = { done: g.matches.filter(isPicked).length, total: g.matches.length };
     }
     return out;
   }, [groups]);
+
+  const totalsByMatch = useMemo(() => {
+    let done = 0, total = 0;
+    for (const g of groups) for (const m of g.matches) { total++; if (isPicked(m)) done++; }
+    return { done, total };
+  }, [groups]);
+
+  const groupsDone = Object.values(progress).filter((p) => p.total > 0 && p.done === p.total).length;
 
   function saveMatch(match: PredictMatch) {
     clearTimeout(timers.current[match.id]);
@@ -57,31 +70,49 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
     setGroups((prev) =>
       prev.map((g) => {
         if (g.label !== groupLabel) return g;
+        const wasComplete = g.matches.length > 0 && g.matches.every(isPicked);
         const matches = g.matches.map((m) =>
           m.id === matchId
             ? { ...m, predictedHome: side === "home" ? value : m.predictedHome, predictedAway: side === "away" ? value : m.predictedAway }
             : m
         );
         saveMatch(matches.find((m) => m.id === matchId)!);
+        // Little reward when a group's 6 matches all get picked.
+        const nowComplete = matches.length > 0 && matches.every(isPicked);
+        if (!wasComplete && nowComplete) celebrate("small");
         return { ...g, matches };
       })
     );
   }
 
   const group = groups[active];
-  const doneCount = Object.values(completed).filter(Boolean).length;
+  const gp = progress[group.label] ?? { done: 0, total: 0 };
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs tracking-[2px] text-[var(--bn-accent)] font-bold">GROUP STAGE</p>
-          <h1 className="text-2xl font-black">Group {group.label}</h1>
+      {/* Overall progress */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold tracking-[2px] text-[var(--bn-accent)]">GROUP STAGE</span>
+          <span className="font-bold text-white/60">{groupsDone}/{groups.length} groups complete</span>
         </div>
-        <span className="text-xs text-white/50">{doneCount}/{groups.length} groups done</span>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+          <motion.div
+            className="h-full bg-gradient-to-r from-[var(--bn-gold)] to-[var(--bn-gold-bright)]"
+            initial={false}
+            animate={{ width: `${totalsByMatch.total ? (totalsByMatch.done / totalsByMatch.total) * 100 : 0}%` }}
+            transition={{ type: "spring", stiffness: 120, damping: 20 }}
+          />
+        </div>
+        <p className="mt-1.5 text-[11px] text-white/40">{totalsByMatch.done} of {totalsByMatch.total} matches predicted</p>
       </div>
 
-      <GroupStepper labels={labels} active={active} completed={completed} onSelect={setActive} />
+      <GroupStepper labels={labels} active={active} progress={progress} onSelect={setActive} />
+
+      <div className="flex items-end justify-between">
+        <h1 className="text-2xl font-black">Group {group.label}</h1>
+        <span className="pb-1 text-xs font-bold text-white/45">{gp.done}/{gp.total} predicted</span>
+      </div>
 
       <GroupPredictor
         group={group}
