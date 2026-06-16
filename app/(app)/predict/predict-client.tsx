@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { GroupPredictor } from "@/components/predict/GroupPredictor";
@@ -11,6 +12,9 @@ import type { PredictGroup, PredictMatch } from "@/lib/predictions/types";
 import { useI18n } from "@/lib/i18n/provider";
 
 const isPicked = (m: PredictMatch) => m.predictedHome !== null && m.predictedAway !== null;
+// A match is "done" for progress when you've predicted it OR it's already been
+// played (final) — you can't predict a finished match, so it must not block you.
+const isResolved = (m: PredictMatch) => isPicked(m) || m.status === "final";
 
 export function PredictClient({ groups: initial, userId }: { groups: PredictGroup[]; userId: string }) {
   const supabase = useMemo(() => createClient(), []);
@@ -26,17 +30,18 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
   const labels = groups.map((g) => g.label);
 
   // Per-group progress, recomputed from live client state so it updates as you type.
+  // A finished match counts as done (you can't predict it) so it never blocks completion.
   const progress = useMemo(() => {
     const out: Record<string, { done: number; total: number }> = {};
     for (const g of groups) {
-      out[g.label] = { done: g.matches.filter(isPicked).length, total: g.matches.length };
+      out[g.label] = { done: g.matches.filter(isResolved).length, total: g.matches.length };
     }
     return out;
   }, [groups]);
 
   const totalsByMatch = useMemo(() => {
     let done = 0, total = 0;
-    for (const g of groups) for (const m of g.matches) { total++; if (isPicked(m)) done++; }
+    for (const g of groups) for (const m of g.matches) { total++; if (isResolved(m)) done++; }
     return { done, total };
   }, [groups]);
 
@@ -72,15 +77,15 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
     setGroups((prev) =>
       prev.map((g) => {
         if (g.label !== groupLabel) return g;
-        const wasComplete = g.matches.length > 0 && g.matches.every(isPicked);
+        const wasComplete = g.matches.length > 0 && g.matches.every(isResolved);
         const matches = g.matches.map((m) =>
           m.id === matchId
             ? { ...m, predictedHome: side === "home" ? value : m.predictedHome, predictedAway: side === "away" ? value : m.predictedAway }
             : m
         );
         saveMatch(matches.find((m) => m.id === matchId)!);
-        // Little reward when a group's 6 matches all get picked.
-        const nowComplete = matches.length > 0 && matches.every(isPicked);
+        // Little reward when a group's predictable matches are all done.
+        const nowComplete = matches.length > 0 && matches.every(isResolved);
         if (!wasComplete && nowComplete) celebrate("small");
         return { ...g, matches };
       })
@@ -108,6 +113,19 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
         </div>
         <p className="mt-1.5 text-[11px] text-white/40">{t.predict.matchesPredicted(totalsByMatch.done, totalsByMatch.total)}</p>
       </div>
+
+      {groupsDone === groups.length && (
+        <Link href="/bracket" className="block">
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--bn-gold)]/50 bg-gradient-to-r from-[var(--bn-gold)]/20 to-transparent p-4">
+            <span className="text-2xl" aria-hidden>🏆</span>
+            <div className="min-w-0 flex-1">
+              <p className="font-black">{t.predict.allSet}</p>
+              <p className="text-xs text-white/60">{t.predict.allSetSub}</p>
+            </div>
+            <span className="shrink-0 text-sm font-extrabold text-[var(--bn-gold)]">{t.predict.bracketCta}</span>
+          </div>
+        </Link>
+      )}
 
       <GroupStepper labels={labels} active={active} progress={progress} onSelect={setActive} />
 
