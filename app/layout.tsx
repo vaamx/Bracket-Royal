@@ -25,14 +25,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { locale, t } = await getT();
+  const { locale } = await getT();
   return (
     <html
       lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <I18nProvider locale={locale} dict={t}>{children}</I18nProvider>
+        <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>
     </html>
   );
