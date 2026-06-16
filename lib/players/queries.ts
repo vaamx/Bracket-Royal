@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface PlayerLite { id: string; name: string; teamId: string | null; flag: string | null; goals: number; scorerRank: number | null; }
 
@@ -66,6 +67,24 @@ export interface PlayerProfile {
   id: string; name: string; teamId: string | null; teamName: string | null; flag: string | null;
   position: string | null; goals: number; scorerRank: number | null;
   inMyTop10: boolean; isMyGoldenBoot: boolean;
+  pickCount: number;  // how many predictors have this player in their Top 10
+  bootCount: number;  // how many crowned them Golden Boot
+  locked: boolean;    // scorer picks locked (R32 started)?
+}
+
+/** Global pick popularity for a player — uses the service-role client because
+ *  scorer_predictions is owner-only under RLS (a normal client sees only its own). */
+async function playerPickCounts(playerId: string): Promise<{ pickCount: number; bootCount: number }> {
+  try {
+    const admin = createAdminClient();
+    const [{ count: pickCount }, { count: bootCount }] = await Promise.all([
+      admin.from("scorer_predictions").select("*", { count: "exact", head: true }).eq("player_id", playerId),
+      admin.from("scorer_predictions").select("*", { count: "exact", head: true }).eq("player_id", playerId).eq("is_golden_boot", true),
+    ]);
+    return { pickCount: pickCount ?? 0, bootCount: bootCount ?? 0 };
+  } catch {
+    return { pickCount: 0, bootCount: 0 };
+  }
 }
 
 export async function getPlayerProfile(id: string): Promise<PlayerProfile | null> {
@@ -83,5 +102,9 @@ export async function getPlayerProfile(id: string): Promise<PlayerProfile | null
     const { data: pick } = await supabase.from("scorer_predictions").select("is_golden_boot").eq("user_id", user.id).eq("player_id", id).maybeSingle();
     if (pick) { inMyTop10 = true; isMyGoldenBoot = pick.is_golden_boot; }
   }
-  return { id: p.id, name: p.name, teamId: p.team_id, teamName, flag, position: p.position, goals: p.goals, scorerRank: p.scorer_rank, inMyTop10, isMyGoldenBoot };
+  const [{ pickCount, bootCount }, locked] = await Promise.all([playerPickCounts(id), scorersLocked()]);
+  return {
+    id: p.id, name: p.name, teamId: p.team_id, teamName, flag, position: p.position, goals: p.goals, scorerRank: p.scorer_rank,
+    inMyTop10, isMyGoldenBoot, pickCount, bootCount, locked,
+  };
 }

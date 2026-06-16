@@ -270,6 +270,13 @@ export const es: Dictionary = {
     yourGoldenBoot: "Tu Bota de Oro 🥇",
     notFound: "Jugador no encontrado",
     back: "Atrás",
+    predictions: "Pronósticos",
+    pickedBy: (n: number) => `Elegido por ${n} ${n === 1 ? "jugador" : "jugadores"}`,
+    asBoot: (n: number) => `${n} como Bota de Oro`,
+    addPick: "Añadir a mi Top 10",
+    makeBoot: "Hacer Bota de Oro",
+    removePick: "Quitar de mis elecciones",
+    pickLocked: "Las elecciones están bloqueadas.",
   },
   meta: {
     title: "Bracket Royale · Predicciones del Mundial 2026",
