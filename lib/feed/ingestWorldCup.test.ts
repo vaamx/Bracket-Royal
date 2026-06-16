@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapStatus, groupLetter, toGroupMatchRow, deriveTeamRows, type FdMatch } from "@/lib/feed/ingestWorldCup";
+import { mapStatus, groupLetter, toGroupMatchRow, deriveTeamRows, knockoutResultsByTeamPair, type FdMatch } from "@/lib/feed/ingestWorldCup";
 
 const finished: FdMatch = {
   id: 1, stage: "GROUP_STAGE", group: "GROUP_A", status: "FINISHED", utcDate: "2026-06-11T19:00:00Z",
@@ -55,5 +55,30 @@ describe("ingestWorldCup mappers", () => {
     expect(mex.name).toBe("Mexico");
     expect(mex.group_label).toBe("A");
     expect(mex.flag).toBe("🇲🇽");
+  });
+});
+
+describe("knockoutResultsByTeamPair", () => {
+  const ourKo = [
+    { id: "R32-1", home_team_id: "MEX", away_team_id: "BRA", status: "scheduled" },
+    { id: "R32-2", home_team_id: "ARG", away_team_id: "ESP", status: "final" }, // already final → skipped
+  ];
+
+  it("maps a feed result to our tie, same orientation", () => {
+    const r = knockoutResultsByTeamPair(ourKo, [{ homeTla: "MEX", awayTla: "BRA", homeScore: 2, awayScore: 1 }]);
+    expect(r).toEqual([{ matchId: "R32-1", homeScore: 2, awayScore: 1 }]);
+  });
+
+  it("orients the score to our home/away when the feed lists teams reversed", () => {
+    const r = knockoutResultsByTeamPair(ourKo, [{ homeTla: "BRA", awayTla: "MEX", homeScore: 1, awayScore: 2 }]);
+    expect(r).toEqual([{ matchId: "R32-1", homeScore: 2, awayScore: 1 }]); // MEX(home) 2, BRA(away) 1
+  });
+
+  it("skips already-final ties and unmatched pairs", () => {
+    const r = knockoutResultsByTeamPair(ourKo, [
+      { homeTla: "ARG", awayTla: "ESP", homeScore: 3, awayScore: 0 }, // R32-2 is final → skip
+      { homeTla: "FRA", awayTla: "GER", homeScore: 1, awayScore: 0 }, // no matching tie → skip
+    ]);
+    expect(r).toEqual([]);
   });
 });

@@ -146,6 +146,78 @@ export async function ingestWorldCup(
   return { teams: teamRows.length, groupMatches: matchRows.length, finished: matchRows.filter((r) => r.status === "final").length };
 }
 
+export interface FdKoResult {
+  homeTla: string;
+  awayTla: string;
+  homeScore: number;
+  awayScore: number;
+}
+export interface OurKoMatch {
+  id: string;
+  home_team_id: string | null;
+  away_team_id: string | null;
+  status: string;
+}
+export interface MatchResult {
+  matchId: string;
+  homeScore: number;
+  awayScore: number;
+}
+
+const pairKey = (a: string, b: string) => [a, b].sort().join("|");
+
+/**
+ * Map finished football-data knockout matches to OUR resolved knockout matches by
+ * team pairing (the feed has no slot labels). Only matches our not-yet-final ties
+ * whose two teams equal the feed match's two teams; orients the score to our home/away.
+ */
+export function knockoutResultsByTeamPair(ourKo: OurKoMatch[], fd: FdKoResult[]): MatchResult[] {
+  const byPair = new Map<string, OurKoMatch>();
+  for (const m of ourKo) {
+    if (!m.home_team_id || !m.away_team_id || m.status === "final") continue;
+    byPair.set(pairKey(m.home_team_id, m.away_team_id), m);
+  }
+  const out: MatchResult[] = [];
+  for (const r of fd) {
+    const m = byPair.get(pairKey(r.homeTla, r.awayTla));
+    if (!m) continue;
+    const sameOrientation = m.home_team_id === r.homeTla;
+    out.push({
+      matchId: m.id,
+      homeScore: sameOrientation ? r.homeScore : r.awayScore,
+      awayScore: sameOrientation ? r.awayScore : r.homeScore,
+    });
+  }
+  return out;
+}
+
+/** Fetch the finished knockout results from football-data (real teams + scores). */
+export async function fetchKnockoutFinals(fetchImpl: typeof fetch = fetch): Promise<FdKoResult[]> {
+  const key = process.env.FOOTBALL_DATA_API_KEY;
+  if (!key) throw new Error("FOOTBALL_DATA_API_KEY is not set");
+  const res = await fetchImpl("https://api.football-data.org/v4/competitions/WC/matches", {
+    headers: { "X-Auth-Token": key },
+  });
+  if (!res.ok) throw new Error(`football-data ${res.status}`);
+  const data = (await res.json()) as { matches: FdMatch[] };
+  return (data.matches ?? [])
+    .filter(
+      (m) =>
+        m.stage !== "GROUP_STAGE" &&
+        m.status === "FINISHED" &&
+        m.homeTeam?.tla &&
+        m.awayTeam?.tla &&
+        m.score?.fullTime?.home !== null &&
+        m.score?.fullTime?.away !== null
+    )
+    .map((m) => ({
+      homeTla: m.homeTeam.tla,
+      awayTla: m.awayTeam.tla,
+      homeScore: m.score.fullTime.home as number,
+      awayScore: m.score.fullTime.away as number,
+    }));
+}
+
 /**
  * Non-destructive refresh: upsert teams + group match results (status/scores/winner).
  * Safe to run on a schedule — never deletes predictions. For the cron.
