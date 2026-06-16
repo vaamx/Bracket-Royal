@@ -20,6 +20,16 @@ export function MatchRow({
   const final = match.status === "final" && match.homeScore !== null && match.awayScore !== null;
   const predicted = match.predictedHome !== null && match.predictedAway !== null;
 
+  // Who's your pick leading? (only for not-yet-played matches you've predicted)
+  const lead: "home" | "away" | "draw" | null =
+    !final && predicted
+      ? match.predictedHome! > match.predictedAway!
+        ? "home"
+        : match.predictedAway! > match.predictedHome!
+        ? "away"
+        : "draw"
+      : null;
+
   let verdict: "exact" | "result" | "miss" | null = null;
   if (final && predicted) {
     const exact = match.predictedHome === match.homeScore && match.predictedAway === match.awayScore;
@@ -29,37 +39,60 @@ export function MatchRow({
     verdict = exact ? "exact" : sameOutcome ? "result" : "miss";
   }
 
+  const teamCls = (side: "home" | "away") =>
+    "min-w-0 flex-1 truncate text-sm " +
+    (lead === side ? "font-extrabold text-[var(--bn-gold)]" : "font-semibold text-white/85");
+
   return (
-    <div className="rounded-xl bg-black/20 px-3 py-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex w-1/3 items-center gap-1.5 justify-end text-sm">
-          <span className="truncate text-right">{home.name}</span>
-          <span aria-hidden>{home.flag}</span>
+    <div
+      className={
+        "rounded-2xl border px-3 py-3 transition-colors " +
+        (final
+          ? "border-white/10 bg-white/[0.02]"
+          : predicted
+          ? "border-[var(--bn-gold)]/30 bg-[var(--bn-gold)]/[0.04]"
+          : "border-white/10 bg-white/[0.02]")
+      }
+    >
+      <div className="flex items-center gap-2">
+        {/* Home */}
+        <span className="flex w-[34%] items-center justify-end gap-1.5">
+          <span className={teamCls("home") + " text-right"}>{home.name}</span>
+          <span className="text-lg" aria-hidden>{home.flag}</span>
         </span>
-        <div className="flex items-center gap-1.5">
-          {/* When final, the boxes show the REAL result (read-only); otherwise your editable pick. */}
+
+        {/* Scores */}
+        <div className="flex shrink-0 items-center gap-1.5">
           <ScoreInput
             value={final ? match.homeScore : match.predictedHome}
             onChange={(v) => onScore("home", v)}
             disabled={locked}
+            highlight={lead === "home"}
             aria-label={`${home.name} score`}
           />
-          <span className="text-white/30">:</span>
+          <span className="text-white/25">:</span>
           <ScoreInput
             value={final ? match.awayScore : match.predictedAway}
             onChange={(v) => onScore("away", v)}
             disabled={locked}
+            highlight={lead === "away"}
             aria-label={`${away.name} score`}
           />
         </div>
-        <span className="flex w-1/3 items-center gap-1.5 text-sm">
-          <span aria-hidden>{away.flag}</span>
-          <span className="truncate">{away.name}</span>
+
+        {/* Away */}
+        <span className="flex w-[34%] items-center gap-1.5">
+          <span className="text-lg" aria-hidden>{away.flag}</span>
+          <span className={teamCls("away")}>{away.name}</span>
         </span>
       </div>
 
+      {lead === "draw" && (
+        <p className="mt-1.5 text-center text-[11px] font-bold uppercase tracking-wide text-white/40">Draw</p>
+      )}
+
       {final && (
-        <div className="mt-1.5 flex items-center justify-center gap-2 text-[11px]">
+        <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
           <span className="rounded bg-white/5 px-1.5 py-0.5 font-bold text-white/50">FULL TIME</span>
           {predicted ? (
             <>
