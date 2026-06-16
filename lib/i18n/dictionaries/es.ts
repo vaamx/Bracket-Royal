@@ -189,6 +189,8 @@ export const es: Dictionary = {
     noPicks: "Aún no hay pronósticos visibles — aparecen cuando empiezan los partidos.",
     theirPick: "su pronóstico",
     ftShort: "FINAL",
+    scorerPicksTitle: "Sus goleadores",
+    goldenBootTag: "Bota de Oro",
   },
   settings: {
     eyebrow: "CUENTA",

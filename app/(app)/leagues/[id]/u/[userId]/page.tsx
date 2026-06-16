@@ -85,6 +85,19 @@ export default async function MemberPicksPage({ params }: { params: Promise<{ id
       {view.hiddenCount > 0 && (
         <p className="text-center text-xs text-white/40">{t.leagues.hidden(view.hiddenCount)}</p>
       )}
+
+      {view.scorerPicks.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[1.5px] text-white/40">{t.leagues.scorerPicksTitle}</p>
+          <div className="flex flex-wrap gap-2">
+            {view.scorerPicks.map((s) => (
+              <span key={s.playerId} className={"flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold " + (s.isBoot ? "border-[var(--bn-gold)] text-[var(--bn-gold)]" : "border-white/12 text-white/80")}>
+                {s.isBoot && <span aria-hidden>🥇</span>}<span aria-hidden>{s.flag ?? "🏳️"}</span>{s.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -187,6 +187,8 @@ export const en = {
     noPicks: "No revealed picks yet — they appear once matches kick off.",
     theirPick: "their pick",
     ftShort: "FT",
+    scorerPicksTitle: "Their Top Scorers",
+    goldenBootTag: "Golden Boot",
   },
   settings: {
     eyebrow: "ACCOUNT",
