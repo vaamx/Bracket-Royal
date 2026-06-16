@@ -17,10 +17,9 @@ export function MatchRow({
   locked: boolean;
   onScore: (side: "home" | "away", value: number | null) => void;
 }) {
-  const showResult = match.status === "final" && match.homeScore !== null;
-
   const final = match.status === "final" && match.homeScore !== null && match.awayScore !== null;
   const predicted = match.predictedHome !== null && match.predictedAway !== null;
+
   let verdict: "exact" | "result" | "miss" | null = null;
   if (final && predicted) {
     const exact = match.predictedHome === match.homeScore && match.predictedAway === match.awayScore;
@@ -31,44 +30,56 @@ export function MatchRow({
   }
 
   return (
-    <div className="relative flex items-center justify-between gap-2 rounded-xl bg-black/20 px-3 py-2">
-      {verdict && (
-        <span
-          className={
-            "absolute -top-2 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[10px] font-extrabold " +
-            (verdict === "exact"
-              ? "bg-[var(--bn-gold)] text-[#0a1428]"
-              : verdict === "result"
-              ? "bg-[var(--bn-success)]/20 text-[var(--bn-success)]"
-              : "bg-red-500/20 text-red-400")
-          }
-        >
-          {verdict === "exact" ? "🎯 EXACT" : verdict === "result" ? "✓" : "✗"}
+    <div className="rounded-xl bg-black/20 px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex w-1/3 items-center gap-1.5 justify-end text-sm">
+          <span className="truncate text-right">{home.name}</span>
+          <span aria-hidden>{home.flag}</span>
         </span>
-      )}
-      <span className="flex w-1/3 items-center gap-1.5 justify-end text-sm">
-        <span className="truncate text-right">{home.name}</span>
-        <span aria-hidden>{home.flag}</span>
-      </span>
-      <div className="flex items-center gap-1.5">
-        <ScoreInput
-          value={showResult ? match.homeScore : match.predictedHome}
-          onChange={(v) => onScore("home", v)}
-          disabled={locked}
-          aria-label={`${home.name} score`}
-        />
-        <span className="text-white/30">:</span>
-        <ScoreInput
-          value={showResult ? match.awayScore : match.predictedAway}
-          onChange={(v) => onScore("away", v)}
-          disabled={locked}
-          aria-label={`${away.name} score`}
-        />
+        <div className="flex items-center gap-1.5">
+          {/* When final, the boxes show the REAL result (read-only); otherwise your editable pick. */}
+          <ScoreInput
+            value={final ? match.homeScore : match.predictedHome}
+            onChange={(v) => onScore("home", v)}
+            disabled={locked}
+            aria-label={`${home.name} score`}
+          />
+          <span className="text-white/30">:</span>
+          <ScoreInput
+            value={final ? match.awayScore : match.predictedAway}
+            onChange={(v) => onScore("away", v)}
+            disabled={locked}
+            aria-label={`${away.name} score`}
+          />
+        </div>
+        <span className="flex w-1/3 items-center gap-1.5 text-sm">
+          <span aria-hidden>{away.flag}</span>
+          <span className="truncate">{away.name}</span>
+        </span>
       </div>
-      <span className="flex w-1/3 items-center gap-1.5 text-sm">
-        <span aria-hidden>{away.flag}</span>
-        <span className="truncate">{away.name}</span>
-      </span>
+
+      {final && (
+        <div className="mt-1.5 flex items-center justify-center gap-2 text-[11px]">
+          <span className="rounded bg-white/5 px-1.5 py-0.5 font-bold text-white/50">FULL TIME</span>
+          {predicted ? (
+            <>
+              <span className="text-white/45">
+                your pick <span className="font-bold tabular-nums text-white/75">{match.predictedHome}–{match.predictedAway}</span>
+              </span>
+              <span
+                className={
+                  "font-extrabold " +
+                  (verdict === "exact" ? "text-[var(--bn-gold)]" : verdict === "result" ? "text-[var(--bn-success)]" : "text-red-400")
+                }
+              >
+                {verdict === "exact" ? "🎯 exact +5" : verdict === "result" ? "✓ right result +2" : "✗ missed"}
+              </span>
+            </>
+          ) : (
+            <span className="text-white/30">you didn&apos;t predict this one</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
