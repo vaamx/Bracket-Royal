@@ -2,12 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyLeaguesDetailed, getSessionProfile, type LeagueCard } from "@/lib/leagues/queries";
-import { createLeagueForm, joinLeagueForm } from "./actions";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { getEarnedBadges } from "@/lib/achievements/queries";
 import { BadgeStrip } from "@/components/ui/BadgeStrip";
+import { CreateLeagueForm, JoinLeagueForm } from "@/components/leagues/LeagueForms";
 import { getT, type Dictionary } from "@/lib/i18n";
 
 function ordinal(n: number): string {
@@ -109,10 +107,7 @@ export default async function LeaguesPage({
             <h2 className="font-bold">{t.leagues.invitedTitle}</h2>
             <p className="text-xs text-white/55">{t.leagues.invitedSub}</p>
           </div>
-          <form action={joinLeagueForm} className="flex gap-2">
-            <Input name="code" defaultValue={invitedCode.toUpperCase()} className="font-mono uppercase" required />
-            <Button type="submit">{t.leagues.join}</Button>
-          </form>
+          <JoinLeagueForm defaultCode={invitedCode.toUpperCase()} />
         </Card>
       )}
 
@@ -132,19 +127,13 @@ export default async function LeaguesPage({
           <h2 className="font-bold">{t.leagues.createTitle}</h2>
           <p className="text-xs text-white/50">{t.leagues.createSub}</p>
         </div>
-        <form action={createLeagueForm} className="flex gap-2">
-          <Input name="name" placeholder={t.leagues.leagueNamePlaceholder} required />
-          <Button type="submit">{t.leagues.create}</Button>
-        </form>
+        <CreateLeagueForm />
       </Card>
 
       {/* Join a league */}
       <Card className="space-y-3">
         <h2 className="font-bold">{t.leagues.haveCode}</h2>
-        <form action={joinLeagueForm} className="flex gap-2">
-          <Input name="code" placeholder={t.leagues.enterCode} className="font-mono uppercase" required />
-          <Button type="submit" variant="ghost">{t.leagues.join}</Button>
-        </form>
+        <JoinLeagueForm variant="ghost" />
       </Card>
     </main>
   );

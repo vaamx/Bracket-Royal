@@ -5,20 +5,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { generateInviteCode } from "@/lib/leagues/inviteCode";
 
-/**
- * Void-returning form-action wrappers. Next 16 requires a `<form action>` to be a
- * server action returning void; these live here (in the "use server" module) so
- * they are real server actions, not plain functions captured in a page component.
- */
-export async function createLeagueForm(formData: FormData): Promise<void> {
-  const res = await createLeague(formData);
-  if ("ok" in res && res.id) redirect(`/leagues/${res.id}`);
-}
-export async function joinLeagueForm(formData: FormData): Promise<void> {
-  const res = await joinLeague(formData);
-  if ("ok" in res && res.id) redirect(`/leagues/${res.id}`);
-}
-
 /** Join via the invite landing, setting a display name first (everyone gets a name). */
 export async function joinWithNameForm(formData: FormData): Promise<void> {
   const name = String(formData.get("display_name") ?? "").trim();
@@ -45,7 +31,7 @@ export async function setDisplayName(formData: FormData) {
 
 export async function createLeague(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "League name is required" };
+  if (!name) return { error: "name_required" };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -60,23 +46,23 @@ export async function createLeague(formData: FormData) {
       .single();
     if (error) {
       if (error.code === "23505") continue; // unique_violation on invite_code -> retry
-      return { error: error.message };
+      return { error: "generic" };
     }
     await supabase.from("league_members").insert({ league_id: league.id, user_id: user.id });
     revalidatePath("/leagues");
     return { ok: true as const, id: league.id as string, code: league.invite_code as string };
   }
-  return { error: "Could not generate a unique invite code, try again" };
+  return { error: "generic" };
 }
 
 export async function joinLeague(formData: FormData) {
   const code = String(formData.get("code") ?? "").trim().toUpperCase();
-  if (!code) return { error: "Invite code is required" };
+  if (!code) return { error: "code_required" };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const { data, error } = await supabase.rpc("join_league_by_code", { p_code: code });
-  if (error) return { error: "League not found for that code" };
+  if (error) return { error: "not_found" };
   revalidatePath("/leagues");
   return { ok: true as const, id: (data as { id?: string } | null)?.id };
 }
