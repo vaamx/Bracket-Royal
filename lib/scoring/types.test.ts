@@ -22,4 +22,10 @@ describe("parseScoringConfig", () => {
     expect(c.ko.r32).toBe(DEFAULT_SCORING_CONFIG.ko.r32);
     expect(c.ko.sf).toBe(DEFAULT_SCORING_CONFIG.ko.sf);
   });
+
+  it("defaults the scorer block and merges partial overrides", () => {
+    expect(DEFAULT_SCORING_CONFIG.scorer).toEqual({ hit: 8, boot: 30, bootExact: 10 });
+    const merged = parseScoringConfig({ scorer: { boot: 50 } });
+    expect(merged.scorer).toEqual({ hit: 8, boot: 50, bootExact: 10 });
+  });
 });

@@ -51,3 +51,9 @@ vercel deploy --prod
   these effectively run daily; use **Pro** for 5-min polling during matches.
 - After deploy, set the Supabase Auth **Site URL** + redirect allow-list to the
   Vercel domain so OAuth/magic-link redirects work.
+
+## Top Scorers feature (migration 0006)
+1. Supabase SQL Editor → paste `supabase/PROD_SETUP_0006.sql` → Run.
+2. Ingest players + current scorer goals against prod:
+   `npm run ingest:players`   (uses .env.local hosted values)
+3. Merge `feat-top-scorers` → `main` (auto-deploys to Vercel).

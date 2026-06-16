@@ -6,6 +6,7 @@ import { outcomeOf, rankThirdPlaceTeams, computeGroupStandings } from "@/lib/mat
 import { computeQualifiers, resolveR32 } from "@/lib/bracket/resolve";
 import { advanceActualBracket, type KOResult } from "@/lib/bracket/advance";
 import { scoreUserKnockout, type StageSets } from "@/lib/scoring/knockoutScore";
+import { scoreUserScorers } from "@/lib/scoring/scorerScore";
 import { KNOCKOUT_MATCHES } from "@/lib/bracket/structure";
 import { computeAchievements } from "@/lib/achievements/compute";
 
@@ -117,7 +118,7 @@ export async function resolveAndAdvance(admin: SupabaseClient): Promise<{ r32Res
  * (idempotent). Updates points, exact_count, and rank. Service-role only.
  */
 export async function runScoring(admin: SupabaseClient): Promise<{ leagues: number; rows: number }> {
-  const [teamsRes, matchesRes, predsRes, leaguesRes, membersRes, koMatchesRes, koPredsRes] = await Promise.all([
+  const [teamsRes, matchesRes, predsRes, leaguesRes, membersRes, koMatchesRes, koPredsRes, playersRes, scorerPredsRes] = await Promise.all([
     admin.from("teams").select("id, group_label, fifa_rank"),
     admin.from("matches").select("id, group_label, home_team_id, away_team_id, home_score, away_score, status, kickoff_at").eq("stage", "group"),
     admin.from("predictions").select("user_id, match_id, predicted_home, predicted_away"),
@@ -125,8 +126,10 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
     admin.from("league_members").select("league_id, user_id"),
     admin.from("matches").select("id, stage, home_team_id, away_team_id, winner_team_id, status, home_score, away_score"),
     admin.from("predictions").select("user_id, match_id, predicted_winner_team_id, predicted_home, predicted_away"),
+    admin.from("players").select("id, goals, scorer_rank"),
+    admin.from("scorer_predictions").select("user_id, player_id, is_golden_boot, predicted_goals"),
   ]);
-  for (const r of [teamsRes, matchesRes, predsRes, leaguesRes, membersRes, koMatchesRes, koPredsRes]) {
+  for (const r of [teamsRes, matchesRes, predsRes, leaguesRes, membersRes, koMatchesRes, koPredsRes, playersRes, scorerPredsRes]) {
     if (r.error) throw r.error;
   }
 
@@ -171,6 +174,21 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
     }
   }
 
+  // Scorer feature: actual top 10 + top scorer(s), and each user's picks.
+  const allPlayers = (playersRes.data ?? []) as { id: string; goals: number; scorer_rank: number | null }[];
+  const rankedPlayers = allPlayers.filter((p) => p.scorer_rank != null).sort((a, b) => (a.scorer_rank as number) - (b.scorer_rank as number));
+  const actualTop10 = rankedPlayers.slice(0, 10).map((p) => p.id);
+  const topGoals = rankedPlayers.length ? rankedPlayers[0].goals : 0;
+  const actualTopScorerIds = topGoals > 0 ? allPlayers.filter((p) => p.goals === topGoals).map((p) => p.id) : [];
+  const goalsByPlayer = new Map(allPlayers.map((p) => [p.id, p.goals]));
+  const scorerByUser = new Map<string, { picks: string[]; bootId: string | null; bootGoals: number | null }>();
+  for (const r of scorerPredsRes.data ?? []) {
+    const e = scorerByUser.get(r.user_id) ?? { picks: [], bootId: null, bootGoals: null };
+    e.picks.push(r.player_id);
+    if (r.is_golden_boot) { e.bootId = r.player_id; e.bootGoals = r.predicted_goals; }
+    scorerByUser.set(r.user_id, e);
+  }
+
   const configByLeague = new Map((leaguesRes.data ?? []).map((l) => [l.id, parseScoringConfig(l.scoring_config)]));
   const membersByLeague = new Map<string, string[]>();
   for (const m of membersRes.data ?? []) {
@@ -196,7 +214,14 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
         predictedScores: koScoresByUser.get(userId),
         actualScores: actualKoScores,
       });
-      return { league_id: leagueId, user_id: userId, points: group.points + ko.points, exact_count: group.exactCount };
+      const sc = scorerByUser.get(userId);
+      const scorer = sc
+        ? scoreUserScorers({
+            picks: sc.picks, goldenBootId: sc.bootId, goldenBootPredictedGoals: sc.bootGoals,
+            actualTop10, actualTopScorerIds, bootActualGoals: sc.bootId ? (goalsByPlayer.get(sc.bootId) ?? null) : null, config,
+          }).points
+        : 0;
+      return { league_id: leagueId, user_id: userId, points: group.points + ko.points + scorer, exact_count: group.exactCount };
     });
 
     // Competition ranking: sort by points desc; equal points share a rank.

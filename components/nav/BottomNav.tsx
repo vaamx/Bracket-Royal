@@ -10,6 +10,7 @@ export function BottomNav() {
   const TABS = [
     { href: "/predict", label: t.nav.predict, icon: "⚽" },
     { href: "/bracket", label: t.nav.bracket, icon: "🏆" },
+    { href: "/scorers", label: t.scorers.tab, icon: "🥇" },
     { href: "/leagues", label: t.nav.leagues, icon: "👥" },
     { href: "/settings", label: t.nav.account, icon: "⚙️" },
   ];
