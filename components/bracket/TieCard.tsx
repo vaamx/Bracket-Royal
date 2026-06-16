@@ -1,40 +1,63 @@
 "use client";
 
+import { motion } from "framer-motion";
 import type { BracketTeam } from "@/lib/bracket/queries";
 
 function TeamRow({
-  teamId, team, picked, dimmed, locked, onPick,
+  teamId, team, picked, decided, locked, onPick,
 }: {
   teamId?: string;
   team?: BracketTeam;
   picked: boolean;
-  dimmed: boolean;
+  decided: boolean;
   locked: boolean;
   onPick: () => void;
 }) {
-  const label = team?.name ?? (teamId ? teamId : "—");
+  const empty = !teamId;
+  const label = team?.name ?? "To be decided";
+  const loser = decided && !picked;
   return (
-    <button
-      disabled={locked || !teamId}
+    <motion.button
+      type="button"
+      disabled={locked || empty}
       onClick={onPick}
+      whileTap={locked || empty ? undefined : { scale: 0.97 }}
+      animate={{ opacity: loser ? 0.45 : 1 }}
       className={
-        "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-colors " +
+        "relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors " +
         (picked
-          ? "bg-[var(--bn-gold)]/15 border border-[var(--bn-gold)] font-extrabold text-white"
-          : "border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.06]") +
-        (dimmed ? " opacity-40" : "") +
-        (locked || !teamId ? " cursor-default" : "")
+          ? "bg-gradient-to-r from-[var(--bn-gold)]/25 to-[var(--bn-gold)]/5 text-white"
+          : empty
+          ? "text-white/30"
+          : "text-white/85 hover:bg-white/[0.04]")
       }
     >
-      <span aria-hidden>{team?.flag ?? "•"}</span>
-      <span className="truncate">{label}</span>
-      {picked && <span className="ml-auto text-[var(--bn-gold)]">✓</span>}
-    </button>
+      <span
+        className={
+          "grid h-8 w-8 shrink-0 place-items-center rounded-full text-lg " +
+          (picked ? "bg-[var(--bn-gold)]/20 ring-1 ring-[var(--bn-gold)]/60" : "bg-white/5")
+        }
+        aria-hidden
+      >
+        {team?.flag ?? "🏳️"}
+      </span>
+      <span className={"truncate text-sm " + (picked ? "font-extrabold" : "font-semibold")}>{label}</span>
+      {picked && (
+        <motion.span
+          layoutId={undefined}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="ml-auto rounded-full bg-[var(--bn-gold)] px-2 py-0.5 text-[10px] font-black tracking-wide text-[#0a1428]"
+        >
+          ADVANCES
+        </motion.span>
+      )}
+    </motion.button>
   );
 }
 
 export function TieCard({
-  home, away, homeTeam, awayTeam, pick, locked, onPick,
+  home, away, homeTeam, awayTeam, pick, locked, label, onPick,
 }: {
   home?: string;
   away?: string;
@@ -42,13 +65,39 @@ export function TieCard({
   awayTeam?: BracketTeam;
   pick?: string;
   locked: boolean;
+  label?: string;
   onPick: (teamId: string) => void;
 }) {
   const decided = pick !== undefined;
   return (
-    <div className="space-y-1.5">
-      <TeamRow teamId={home} team={homeTeam} picked={pick === home} dimmed={decided && pick !== home} locked={locked} onPick={() => home && onPick(home)} />
-      <TeamRow teamId={away} team={awayTeam} picked={pick === away} dimmed={decided && pick !== away} locked={locked} onPick={() => away && onPick(away)} />
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className={
+        "overflow-hidden rounded-2xl border bg-white/[0.02] " +
+        (decided ? "border-[var(--bn-gold)]/40 shadow-[0_0_24px_-12px_rgba(212,175,55,0.6)]" : "border-white/10")
+      }
+    >
+      {(label || locked) && (
+        <div className="flex items-center justify-between px-4 pt-2.5 text-[10px] font-bold uppercase tracking-[1.5px] text-white/35">
+          <span>{label}</span>
+          {locked && <span className="text-white/40">🔒 Locked</span>}
+        </div>
+      )}
+      <TeamRow
+        teamId={home} team={homeTeam} picked={pick === home} decided={decided} locked={locked}
+        onPick={() => home && onPick(home)}
+      />
+      <div className="relative flex items-center px-4">
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="px-2 text-[10px] font-black text-white/25">VS</span>
+        <div className="h-px flex-1 bg-white/10" />
+      </div>
+      <TeamRow
+        teamId={away} team={awayTeam} picked={pick === away} decided={decided} locked={locked}
+        onPick={() => away && onPick(away)}
+      />
+    </motion.div>
   );
 }
