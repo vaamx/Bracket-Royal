@@ -9,7 +9,7 @@ export function InviteShare({ code, leagueName }: { code: string; leagueName: st
 
   function joinUrl() {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}/leagues?code=${code}`;
+    return `${origin}/join/${code}`;
   }
 
   async function copy(what: "code" | "link") {

@@ -171,6 +171,9 @@ export const en = {
     copyLink: "Copy link",
     linkCopied: "Link copied ✓",
     yourPosition: "You",
+    makePicksTitle: "You're in! 🎯",
+    makePicksSub: "Make your predictions to start earning points and climb this board.",
+    makePicksCta: "Make your predictions →",
   },
   settings: {
     eyebrow: "ACCOUNT",
@@ -200,6 +203,18 @@ export const en = {
     hot_streak: { label: "On Fire", desc: "3 exact scorelines in a row" },
     oracle: { label: "Oracle", desc: "Called the champion" },
   } as Record<string, { label: string; desc: string }>,
+  join: {
+    eyebrow: "YOU'RE INVITED",
+    title: (name: string) => `Join “${name}”`,
+    sub: "Predict the World Cup 2026 group by group, build your bracket, and climb this league's leaderboard with friends.",
+    cta: "Join the league →",
+    later: "Maybe later — just explore",
+    notFoundTitle: "Invite not found",
+    notFoundSub: "This invite link doesn't match a league. Double-check it, or ask your friend for a fresh one.",
+    goHome: "Go to Bracket Royale →",
+    metaTitle: (name: string) => `Join “${name}” on Bracket Royale`,
+    metaDesc: "You've been invited to a World Cup 2026 prediction league. Tap to join and start picking.",
+  },
   meta: {
     title: "Bracket Royale · World Cup 2026 Predictions",
     description: "Predict every match, build your knockout bracket, and climb the live leaderboard with friends.",

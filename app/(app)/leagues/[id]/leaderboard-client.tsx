@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import type { StandingRow } from "@/lib/leaderboard/queries";
+import { sortStandingRows, type StandingRow } from "@/lib/leaderboard/types";
 import { useI18n } from "@/lib/i18n/provider";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -18,40 +18,36 @@ export function LeaderboardClient({
   const { t } = useI18n();
   const [rows, setRows] = useState<StandingRow[]>(initialRows);
 
+  // Refetch the full merged member set (members + profiles + standings) — mirrors
+  // the server query so brand-new members show immediately with 0 points.
+  const refetch = useCallback(async () => {
+    const supabase = createClient();
+    const { data: members } = await supabase.from("league_members").select("user_id").eq("league_id", leagueId);
+    const userIds = (members ?? []).map((m) => m.user_id);
+    if (userIds.length === 0) return;
+    const [{ data: profiles }, { data: standings }] = await Promise.all([
+      supabase.from("profiles").select("id, display_name").in("id", userIds),
+      supabase.from("league_standings").select("user_id, points, rank, exact_count").eq("league_id", leagueId),
+    ]);
+    const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name as string | null]));
+    const standByUser = new Map((standings ?? []).map((s) => [s.user_id, s]));
+    setRows(sortStandingRows(userIds.map((uid) => {
+      const s = standByUser.get(uid);
+      return { userId: uid, displayName: nameById.get(uid) ?? null, points: s?.points ?? 0, rank: s?.rank ?? null, exactCount: s?.exact_count ?? 0 };
+    })));
+  }, [leagueId]);
+
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel(`standings:${leagueId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "league_standings", filter: `league_id=eq.${leagueId}` },
-        async () => {
-          // A standings row changed — refetch this league's ordered rows.
-          const { data } = await supabase
-            .from("league_standings")
-            .select("user_id, points, rank, exact_count, profiles(display_name)")
-            .eq("league_id", leagueId)
-            .order("points", { ascending: false })
-            .order("exact_count", { ascending: false })
-            .order("user_id", { ascending: true });
-          if (data) {
-            setRows(
-              data.map((s) => ({
-                userId: s.user_id,
-                displayName: (s.profiles as unknown as { display_name: string | null })?.display_name ?? "Guest",
-                points: s.points,
-                rank: s.rank,
-                exactCount: s.exact_count,
-              }))
-            );
-          }
-        }
-      )
+      .channel(`league:${leagueId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "league_standings", filter: `league_id=eq.${leagueId}` }, refetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "league_members", filter: `league_id=eq.${leagueId}` }, refetch)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [leagueId]);
+  }, [leagueId, refetch]);
 
   if (rows.length === 0) {
     return (
@@ -87,7 +83,7 @@ export function LeaderboardClient({
                   {MEDALS[i] ?? i + 1}
                 </span>
                 <span className="truncate font-semibold">
-                  {r.displayName}
+                  {r.displayName ?? t.common.guest}
                   {isMe && <span className="ml-1.5 text-[10px] font-bold text-[var(--bn-gold)]">{t.leagues.yourPosition.toUpperCase()}</span>}
                 </span>
               </span>

@@ -173,6 +173,9 @@ export const es: Dictionary = {
     copyLink: "Copiar enlace",
     linkCopied: "Enlace copiado ✓",
     yourPosition: "Tú",
+    makePicksTitle: "¡Ya estás dentro! 🎯",
+    makePicksSub: "Haz tus pronósticos para empezar a sumar puntos y subir en esta tabla.",
+    makePicksCta: "Haz tus pronósticos →",
   },
   settings: {
     eyebrow: "CUENTA",
@@ -201,6 +204,18 @@ export const es: Dictionary = {
     perfect_group: { label: "Grupo perfecto", desc: "Todos los partidos de un grupo exactos" },
     hot_streak: { label: "En racha", desc: "3 marcadores exactos seguidos" },
     oracle: { label: "Oráculo", desc: "Acertaste al campeón" },
+  },
+  join: {
+    eyebrow: "TE HAN INVITADO",
+    title: (name: string) => `Únete a “${name}”`,
+    sub: "Predice el Mundial 2026 grupo por grupo, arma tu cuadro y sube en la tabla de esta liga con amigos.",
+    cta: "Unirme a la liga →",
+    later: "Quizás luego — solo explorar",
+    notFoundTitle: "Invitación no encontrada",
+    notFoundSub: "Este enlace de invitación no corresponde a ninguna liga. Verifícalo o pide uno nuevo a tu amigo.",
+    goHome: "Ir a Bracket Royale →",
+    metaTitle: (name: string) => `Únete a “${name}” en Bracket Royale`,
+    metaDesc: "Te invitaron a una liga de predicciones del Mundial 2026. Toca para unirte y empezar a elegir.",
   },
   meta: {
     title: "Bracket Royale · Predicciones del Mundial 2026",

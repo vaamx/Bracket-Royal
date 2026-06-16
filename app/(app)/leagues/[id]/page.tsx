@@ -16,7 +16,8 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   ]);
   if (!data) notFound();
 
-  const players = data.rows.length;
+  const myRow = user ? data.rows.find((r) => r.userId === user.id) : null;
+  const needsPicks = !myRow || myRow.points === 0;
 
   return (
     <main className="mx-auto max-w-md space-y-5 p-6">
@@ -29,9 +30,19 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         <div className="min-w-0">
           <p className="text-xs font-bold tracking-[2px] text-[var(--bn-accent)]">{t.leagues.leaderboard}</p>
           <h1 className="truncate text-2xl font-black">{data.league.name}</h1>
-          <p className="text-xs text-white/45">{t.common.players(players)}</p>
+          <p className="text-xs text-white/45">{t.common.players(data.memberCount)}</p>
         </div>
       </div>
+
+      {needsPicks && (
+        <Link href="/predict" className="block">
+          <div className="rounded-2xl border border-[var(--bn-gold)]/40 bg-gradient-to-r from-[var(--bn-gold)]/15 to-transparent p-4">
+            <p className="font-black">{t.leagues.makePicksTitle}</p>
+            <p className="mt-1 text-xs text-white/60">{t.leagues.makePicksSub}</p>
+            <p className="mt-2 text-sm font-extrabold text-[var(--bn-gold)]">{t.leagues.makePicksCta}</p>
+          </div>
+        </Link>
+      )}
 
       {!data.league.isGlobal && (
         <InviteShare code={data.league.inviteCode} leagueName={data.league.name} />
