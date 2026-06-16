@@ -7,8 +7,8 @@ import type { BracketSlotView } from "@/lib/bracket/userBracket";
 import { useI18n } from "@/lib/i18n/provider";
 
 // Layout geometry (px). The canvas is fixed-size and pans inside a scroll box.
-const COLW = 132;
-const CARD_W = 116;
+const COLW = 150;
+const CARD_W = 134;
 const CARD_H = 56;
 const PAD_X = (COLW - CARD_W) / 2;
 const SLOT_R32 = 70;
@@ -42,43 +42,67 @@ function useLayout() {
 }
 
 function Chip({
-  teamId, team, picked, dimmed, locked, onPick,
+  teamId, team, picked, dimmed, locked, score, onPick, onScore,
 }: {
   teamId?: string;
   team?: BracketTeam;
   picked: boolean;
   dimmed: boolean;
   locked: boolean;
+  score?: number | null;
   onPick: () => void;
+  onScore?: (value: number | null) => void;
 }) {
   return (
-    <button
-      type="button"
-      disabled={locked || !teamId}
-      onClick={onPick}
+    <div
       className={
-        "flex h-[26px] w-full items-center gap-1.5 rounded-md px-1.5 text-left transition-colors " +
-        (picked
-          ? "bg-[var(--bn-gold)]/20 text-white"
-          : "text-white/75 hover:bg-white/[0.06]") +
+        "flex h-[26px] items-center gap-1 rounded-md pl-1.5 pr-1 transition-colors " +
+        (picked ? "bg-[var(--bn-gold)]/20" : "") +
         (dimmed ? " opacity-40" : "")
       }
     >
-      <span className="text-sm leading-none" aria-hidden>{team?.flag ?? "·"}</span>
-      <span className={"truncate text-[11px] " + (picked ? "font-black text-[var(--bn-gold)]" : "font-bold")}>
-        {teamId ?? "—"}
-      </span>
-    </button>
+      <button
+        type="button"
+        disabled={locked || !teamId}
+        onClick={onPick}
+        className={"flex min-w-0 flex-1 items-center gap-1.5 text-left " + (picked ? "text-white" : "text-white/75")}
+      >
+        <span className="text-sm leading-none" aria-hidden>{team?.flag ?? "·"}</span>
+        <span className={"truncate text-[11px] " + (picked ? "font-black text-[var(--bn-gold)]" : "font-bold")}>
+          {teamId ?? "—"}
+        </span>
+      </button>
+      {onScore && teamId && (
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={99}
+          disabled={locked}
+          value={score ?? ""}
+          aria-label={`${team?.name ?? teamId} score`}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === "") return onScore(null);
+            const n = Math.max(0, Math.min(99, Math.floor(Number(val))));
+            onScore(Number.isNaN(n) ? null : n);
+          }}
+          className="h-5 w-6 shrink-0 rounded border border-white/15 bg-black/30 text-center text-[11px] font-black tabular-nums text-white outline-none [appearance:textfield] focus:border-[var(--bn-gold)] [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-40"
+        />
+      )}
+    </div>
   );
 }
 
 export function BracketTree({
-  view, teams, locks, onPick,
+  view, teams, locks, scores, onPick, onScore,
 }: {
   view: Record<string, BracketSlotView>;
   teams: Record<string, BracketTeam>;
   locks: Record<string, boolean>;
+  scores: Record<string, { home: number | null; away: number | null }>;
   onPick: (matchId: string, teamId: string) => void;
+  onScore: (matchId: string, side: "home" | "away", value: number | null) => void;
 }) {
   const { t } = useI18n();
   const { order, totalH } = useLayout();
@@ -170,13 +194,17 @@ export function BracketTree({
                 <Chip
                   teamId={v.homeTeamId} team={v.homeTeamId ? teams[v.homeTeamId] : undefined}
                   picked={decided && v.pick === v.homeTeamId} dimmed={decided && v.pick !== v.homeTeamId}
-                  locked={locks[id] ?? false} onPick={() => v.homeTeamId && onPick(id, v.homeTeamId)}
+                  locked={locks[id] ?? false} score={scores[id]?.home}
+                  onPick={() => v.homeTeamId && onPick(id, v.homeTeamId)}
+                  onScore={(val) => onScore(id, "home", val)}
                 />
                 <div className="mx-1.5 h-px bg-white/10" />
                 <Chip
                   teamId={v.awayTeamId} team={v.awayTeamId ? teams[v.awayTeamId] : undefined}
                   picked={decided && v.pick === v.awayTeamId} dimmed={decided && v.pick !== v.awayTeamId}
-                  locked={locks[id] ?? false} onPick={() => v.awayTeamId && onPick(id, v.awayTeamId)}
+                  locked={locks[id] ?? false} score={scores[id]?.away}
+                  onPick={() => v.awayTeamId && onPick(id, v.awayTeamId)}
+                  onScore={(val) => onScore(id, "away", val)}
                 />
               </div>
             );

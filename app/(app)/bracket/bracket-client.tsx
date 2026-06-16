@@ -237,7 +237,7 @@ export function BracketClient({ data }: { data: BracketData }) {
       {effectiveMode === "tree" ? (
         <>
           {seeded && <p className="text-xs text-white/45">{t.bracket.tapHintTree}</p>}
-          <BracketTree view={view} teams={data.teams} locks={locks} onPick={onPick} />
+          <BracketTree view={view} teams={data.teams} locks={locks} scores={koScores} onPick={onPick} onScore={onScore} />
           <p className={"text-center text-xs " + (status === "error" ? "text-red-400" : "text-white/40")}>{statusLabel}</p>
         </>
       ) : (

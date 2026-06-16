@@ -116,7 +116,7 @@ export const en = {
     howStep3: "Tap a team to advance them — winners flow into the next round all the way to the final.",
     finishPicks: (done: number, total: number) => `Finish your group picks (${done}/${total}) →`,
     startPredicting: "Start predicting the group stage →",
-    tapHintTree: "Tap a team to advance them — winners flow through the whole bracket. Scroll sideways to reach the final. Switch to Round by round above to also predict scorelines for bonus points.",
+    tapHintTree: "Tap a team to advance them — winners flow through the whole bracket. Type the 90' score in the small boxes for bonus points. Scroll sideways to reach the final, or use Round by round above for a bigger view.",
     tapHintList: "Tap the team you think advances. Winners flow into the next round automatically.",
     shareCta: (champion: string) => `Share my bracket — ${champion}`,
     shareCopied: "Copied to clipboard ✓",

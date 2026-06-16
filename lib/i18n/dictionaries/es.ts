@@ -118,7 +118,7 @@ export const es: Dictionary = {
     howStep3: "Toca un equipo para hacerlo avanzar — los ganadores pasan a la siguiente ronda hasta la final.",
     finishPicks: (done: number, total: number) => `Termina tus grupos (${done}/${total}) →`,
     startPredicting: "Empezar a predecir la fase de grupos →",
-    tapHintTree: "Toca un equipo para hacerlo avanzar — los ganadores recorren todo el cuadro. Desliza para llegar a la final. Cambia a Ronda por ronda arriba para también pronosticar marcadores y ganar puntos extra.",
+    tapHintTree: "Toca un equipo para hacerlo avanzar — los ganadores recorren todo el cuadro. Escribe el marcador de los 90' en las casillas para ganar puntos extra. Desliza para llegar a la final, o usa Ronda por ronda arriba para una vista más amplia.",
     tapHintList: "Toca el equipo que crees que avanza. Los ganadores pasan a la siguiente ronda automáticamente.",
     shareCta: (champion: string) => `Compartir mi cuadro — ${champion}`,
     shareCopied: "Copiado al portapapeles ✓",
