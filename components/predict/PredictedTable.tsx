@@ -19,7 +19,8 @@ export function PredictedTable({
       <ul className="space-y-1">
         {rows.map((r, i) => {
           const t = teamsById[r.teamId];
-          const qualifies = i < 2;
+          // Top 2 advance outright; 3rd place is in contention (8 best 3rds advance).
+          const tier = i < 2 ? "qualify" : i === 2 ? "contention" : "out";
           return (
             <motion.li
               key={r.teamId}
@@ -27,7 +28,11 @@ export function PredictedTable({
               transition={{ type: "spring", stiffness: 420, damping: 30 }}
               className={
                 "grid grid-cols-[1.4rem_1fr_2rem_2rem_2rem] items-center gap-1 rounded-lg px-2 py-2 text-sm " +
-                (qualifies ? "bg-[var(--bn-success)]/10 border-l-2 border-[var(--bn-success)]" : "bg-white/[0.02]")
+                (tier === "qualify"
+                  ? "bg-[var(--bn-success)]/10 border-l-2 border-[var(--bn-success)]"
+                  : tier === "contention"
+                  ? "bg-[var(--bn-gold)]/[0.07] border-l-2 border-[var(--bn-gold)]/60"
+                  : "bg-white/[0.02] border-l-2 border-transparent")
               }
             >
               <span className="text-white/50 font-bold">{i + 1}</span>
