@@ -22,7 +22,13 @@ export default async function ScorersPage() {
       </div>
       <ScorersClient contenders={contenders} initialPicks={board.picks} initialBootId={board.bootId} initialBootGoals={board.bootGoals} locked={locked} />
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-[1.5px] text-white/40">{t.scorers.actualTop10}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs font-bold uppercase tracking-[1.5px] text-white/40">{t.scorers.actualTop10}</p>
+          <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-black text-red-400">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />{t.scorers.liveBadge}
+          </span>
+        </div>
+        <p className="mb-2 mt-0.5 text-[11px] text-white/40">{t.scorers.liveCaption}</p>
         <ActualTop10 rows={top10} t={t} />
       </div>
     </main>

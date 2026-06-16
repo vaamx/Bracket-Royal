@@ -35,16 +35,40 @@ export function ScorersClient({ contenders, initialPicks, initialBootId, initial
   function makeBoot(id: string) { setBootId(id); start(async () => { const r = await setGoldenBoot(id); if (!("error" in r) && picks.length === 10) celebrate("small"); }); }
   function goals(v: number | null) { setBootGoalsState(v); start(async () => { await setBootGoals(v); }); }
 
+  const bootName = bootId ? picks.find((p) => p.id === bootId)?.name ?? null : null;
+
   return (
     <div className="space-y-4">
-      <p className="text-xs font-bold text-white/55">{t.scorers.progress(picks.length)}</p>
-      <div className="space-y-2">
-        {picks.map((p) => (
-          <PickRow key={p.id} player={p} isBoot={bootId === p.id} predictedGoals={bootGoals} locked={locked}
-            onSetBoot={() => makeBoot(p.id)} onRemove={() => remove(p.id)} onGoals={goals} />
-        ))}
+      {/* Progress + Golden Boot status */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold tracking-[2px] text-[var(--bn-accent)]">{t.scorers.yourTop10}</span>
+          <span className="font-bold text-white/60">{t.scorers.progress(picks.length)}</span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-gradient-to-r from-[var(--bn-gold)] to-[var(--bn-gold-bright)] transition-[width] duration-300"
+            style={{ width: `${picks.length * 10}%` }} />
+        </div>
+        <p className="mt-1.5 text-[11px] text-white/45">
+          {bootName ? <span className="text-[var(--bn-gold)]">🥇 {bootName}</span> : t.scorers.crownPrompt}
+        </p>
       </div>
-      {!locked && picks.length < 10 && <PlayerSearch contenders={contenders} chosenIds={chosenIds} onAdd={add} />}
+
+      {picks.length > 0 && (
+        <div className="space-y-2">
+          {picks.map((p) => (
+            <PickRow key={p.id} player={p} isBoot={bootId === p.id} predictedGoals={bootGoals} locked={locked}
+              onSetBoot={() => makeBoot(p.id)} onRemove={() => remove(p.id)} onGoals={goals} />
+          ))}
+        </div>
+      )}
+
+      {!locked && picks.length < 10 && (
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[1.5px] text-white/40">{t.scorers.addPlayers}</p>
+          <PlayerSearch contenders={contenders} chosenIds={chosenIds} onAdd={add} />
+        </div>
+      )}
       {err && <p className="text-sm text-red-400">{err}</p>}
     </div>
   );
