@@ -230,6 +230,10 @@ export const es: Dictionary = {
     viewLeaderboard: "Ver tabla →",
     earnHint: "Haz pronósticos para empezar a sumar puntos.",
   },
+  achievements: {
+    title: "Logros",
+    count: (n: number, total: number) => `${n}/${total} conseguidos`,
+  },
   badges: {
     bullseye: { label: "Diana", desc: "Acertaste un marcador exacto" },
     sharpshooter: { label: "Francotirador", desc: "5+ marcadores exactos" },

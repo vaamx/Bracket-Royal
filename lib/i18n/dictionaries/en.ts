@@ -228,6 +228,10 @@ export const en = {
     viewLeaderboard: "View leaderboard →",
     earnHint: "Make predictions to start earning points.",
   },
+  achievements: {
+    title: "Achievements",
+    count: (n: number, total: number) => `${n}/${total} earned`,
+  },
   badges: {
     bullseye: { label: "Bullseye", desc: "Nailed an exact scoreline" },
     sharpshooter: { label: "Sharpshooter", desc: "5+ exact scorelines" },
