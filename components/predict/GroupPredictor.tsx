@@ -36,12 +36,16 @@ export function GroupPredictor({
     () =>
       predictedStandings(
         group.teams.map((t) => ({ id: t.id, fifaRank: t.fifaRank })),
-        group.matches.map((m) => ({
-          home_team_id: m.homeTeamId,
-          away_team_id: m.awayTeamId,
-          predicted_home: m.predictedHome,
-          predicted_away: m.predictedAway,
-        }))
+        group.matches.map((m) => {
+          // Already-played matches count their REAL result; the rest use your pick.
+          const final = m.status === "final" && m.homeScore !== null && m.awayScore !== null;
+          return {
+            home_team_id: m.homeTeamId,
+            away_team_id: m.awayTeamId,
+            predicted_home: final ? m.homeScore : m.predictedHome,
+            predicted_away: final ? m.awayScore : m.predictedAway,
+          };
+        })
       ),
     [group.matches, group.teams]
   );
