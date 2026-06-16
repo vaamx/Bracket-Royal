@@ -17,7 +17,14 @@ export async function searchPlayers(q: string): Promise<PlayerLite[]> {
   const supabase = await createClient();
   const term = q.trim();
   if (term.length < 2) return [];
-  const { data } = await supabase.rpc("search_players", { q: term });
+  const { data, error } = await supabase.rpc("search_players", { q: term });
+  if (error) {
+    // Fallback (accent-sensitive) if the unaccent RPC isn't deployed yet (migration 0007).
+    const { data: fb } = await supabase
+      .from("players").select("id, name, team_id, goals, scorer_rank")
+      .ilike("name", `%${term}%`).order("goals", { ascending: false }).limit(20);
+    return withFlags(fb ?? []);
+  }
   return withFlags((data ?? []) as { id: string; name: string; team_id: string | null; goals: number; scorer_rank: number | null }[]);
 }
 
