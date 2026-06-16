@@ -30,6 +30,22 @@ body {
   font-family: var(--font-sans), system-ui, Arial, Helvetica, sans-serif;
 }
 
+@keyframes bn-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.bn-marquee {
+  animation: bn-marquee 30s linear infinite;
+}
+
+@keyframes bn-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.bn-float {
+  animation: bn-float 4s ease-in-out infinite;
+}
+
 /* The radial "broadcast" glow lives on its own fixed, full-viewport layer behind
    all content. Fixed + inset:0 guarantees full coverage at any scroll position
    without the background-attachment:fixed quirks that left a band on mobile. */
