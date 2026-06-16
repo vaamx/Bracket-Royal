@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 import type { PlayerLite } from "@/lib/players/queries";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -15,7 +16,7 @@ export function PickRow({
     <div className={"rounded-2xl border px-3 py-2.5 transition-colors " + (isBoot ? "border-[var(--bn-gold)] bg-[var(--bn-gold)]/[0.06]" : "border-white/10 bg-white/[0.02]")}>
       <div className="flex items-center gap-2">
         <button onClick={onSetBoot} disabled={locked} aria-label={t.scorers.setBoot} className={"text-lg " + (isBoot ? "" : "opacity-30 hover:opacity-70")}>{isBoot ? "🥇" : "☆"}</button>
-        <span className="text-lg" aria-hidden>{player.flag ?? "🏳️"}</span>
+        <PlayerAvatar name={player.name} flag={player.flag} size={32} boot={isBoot} />
         <span className="min-w-0 flex-1 truncate text-sm font-semibold">
           <Link href={`/players/${player.id}`} className="hover:underline">{player.name}</Link>
           {" "}<span className="text-white/40">{player.teamId}</span>

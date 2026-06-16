@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 import type { PlayerLite } from "@/lib/players/queries";
 import type { Dictionary } from "@/lib/i18n";
 
@@ -12,7 +13,7 @@ export function ActualTop10({ rows, t }: { rows: PlayerLite[]; t: Dictionary }) 
         <li key={p.id} className={"flex items-center justify-between rounded-xl border px-4 py-2.5 " + (i < 3 ? "border-[var(--bn-gold)]/30 bg-[var(--bn-gold)]/[0.05]" : "border-white/10 bg-white/[0.03]")}>
           <Link href={`/players/${p.id}`} className="flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80">
             <span className="grid w-6 shrink-0 place-items-center text-center text-base font-extrabold text-[var(--bn-gold)]">{MEDALS[i] ?? i + 1}</span>
-            <span className="text-lg" aria-hidden>{p.flag ?? "🏳️"}</span>
+            <PlayerAvatar name={p.name} flag={p.flag} size={32} boot={i === 0} />
             <span className="truncate text-sm font-semibold">{p.name}</span>
           </Link>
           <span className="ml-2 flex shrink-0 items-baseline gap-1">

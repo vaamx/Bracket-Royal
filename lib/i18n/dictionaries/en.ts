@@ -271,6 +271,7 @@ export const en = {
     crownPrompt: "Tap ☆ on a pick to crown your Golden Boot 🥇",
     addPlayers: "Add players",
     noActualYet: "No goals yet — the board fills as matches are played.",
+    noResults: "No players found — try another spelling.",
     goals: (n: number) => `${n} ${n === 1 ? "goal" : "goals"}`,
     inTop10: "In the Top 10",
     errMax: "You can only pick 10 players.",
