@@ -11,7 +11,11 @@ const CARD_W = 116;
 const CARD_H = 56;
 const PAD_X = (COLW - CARD_W) / 2;
 const SLOT_R32 = 70;
+const HEADER_H = 28;
 const STAGES = ["r32", "r16", "qf", "sf", "final"] as const;
+const STAGE_LABELS: Record<string, string> = {
+  r32: "Round of 32", r16: "Round of 16", qf: "Quarters", sf: "Semis", final: "Final",
+};
 
 /** Post-order DFS from the final so each stage's list is top-to-bottom and a
  *  parent at index j is always fed by children 2j (home) and 2j+1 (away). */
@@ -84,13 +88,17 @@ export function BracketTree({
   const champW = 120;
   const W = colCount * COLW + champW;
 
+  const champion = view["F-1"]?.pick;
+
   const slotH = (stageIdx: number) => totalH / order[STAGES[stageIdx]].length;
-  const centerY = (stageIdx: number, i: number) => i * slotH(stageIdx) + slotH(stageIdx) / 2;
+  const centerY = (stageIdx: number, i: number) => HEADER_H + i * slotH(stageIdx) + slotH(stageIdx) / 2;
   const cardLeft = (stageIdx: number) => stageIdx * COLW + PAD_X;
   const cardRight = (stageIdx: number) => cardLeft(stageIdx) + CARD_W;
+  const canvasH = totalH + HEADER_H;
 
-  // SVG connector polylines from each feeder into its parent.
-  const connectors: Array<{ d: string; active: boolean }> = [];
+  // SVG connector polylines from each feeder into its parent. A connector whose
+  // feeder was won by the eventual champion gets the bright "road to glory" trail.
+  const connectors: Array<{ d: string; active: boolean; champ: boolean }> = [];
   for (let s = 0; s < colCount - 1; s++) {
     const ids = order[STAGES[s]];
     ids.forEach((fid, i) => {
@@ -100,29 +108,40 @@ export function BracketTree({
       const x2 = cardLeft(s + 1);
       const y2 = centerY(s + 1, parentI);
       const midX = (x1 + x2) / 2;
+      const pick = view[fid]?.pick;
       connectors.push({
         d: `M ${x1} ${y1} H ${midX} V ${y2} H ${x2}`,
-        active: view[fid]?.pick !== undefined,
+        active: pick !== undefined,
+        champ: champion !== undefined && pick === champion,
       });
     });
   }
-
-  const champion = view["F-1"]?.pick;
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 pb-2">
       <div
         className="relative rounded-2xl border border-white/10 bg-[radial-gradient(120%_80%_at_50%_0%,rgba(124,92,255,0.10),transparent_60%)]"
-        style={{ width: W, height: totalH }}
+        style={{ width: W, height: canvasH }}
       >
+        {/* round headers */}
+        {STAGES.map((stage, s) => (
+          <div
+            key={stage}
+            className="absolute text-center text-[10px] font-bold uppercase tracking-wide text-white/40"
+            style={{ left: cardLeft(s), top: 6, width: CARD_W }}
+          >
+            {STAGE_LABELS[stage]}
+          </div>
+        ))}
+
         {/* connectors */}
-        <svg className="pointer-events-none absolute inset-0" width={W} height={totalH} fill="none">
+        <svg className="pointer-events-none absolute inset-0" width={W} height={canvasH} fill="none">
           {connectors.map((c, k) => (
             <path
               key={k}
               d={c.d}
-              stroke={c.active ? "var(--bn-gold)" : "rgba(255,255,255,0.14)"}
-              strokeWidth={c.active ? 2 : 1.5}
+              stroke={c.champ ? "var(--bn-gold-bright)" : c.active ? "var(--bn-gold)" : "rgba(255,255,255,0.14)"}
+              strokeWidth={c.champ ? 2.5 : c.active ? 2 : 1.5}
             />
           ))}
         </svg>
@@ -132,13 +151,16 @@ export function BracketTree({
           order[stage].map((id, i) => {
             const v = view[id] ?? {};
             const decided = v.pick !== undefined;
+            const isChampTie = champion !== undefined && v.pick === champion;
             const top = centerY(s, i) - CARD_H / 2;
             return (
               <div
                 key={id}
                 className={
                   "absolute flex flex-col justify-center rounded-lg border bg-[#0c1730]/80 backdrop-blur-sm " +
-                  (decided ? "border-[var(--bn-gold)]/45" : "border-white/10")
+                  (isChampTie
+                    ? "border-[var(--bn-gold)] shadow-[0_0_16px_-6px_rgba(244,213,106,0.8)]"
+                    : decided ? "border-[var(--bn-gold)]/45" : "border-white/10")
                 }
                 style={{ left: cardLeft(s), top, width: CARD_W, height: CARD_H }}
               >
@@ -161,9 +183,9 @@ export function BracketTree({
         {/* champion */}
         <div
           className="absolute flex flex-col items-center"
-          style={{ left: colCount * COLW, top: totalH / 2 - 44, width: champW }}
+          style={{ left: colCount * COLW, top: HEADER_H + totalH / 2 - 44, width: champW }}
         >
-          <div className="text-3xl">🏆</div>
+          <div className={champion ? "text-3xl drop-shadow-[0_4px_16px_rgba(244,213,106,0.6)]" : "text-3xl opacity-50"}>🏆</div>
           <div
             className={
               "mt-1 w-full truncate rounded-lg border px-2 py-1.5 text-center text-xs font-black " +
