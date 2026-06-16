@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getPlayerProfile } from "@/lib/players/queries";
 import { getT } from "@/lib/i18n";
+import { ProfilePickActions } from "@/components/players/ProfilePickActions";
 
 export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -37,6 +38,18 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
           <p className="text-3xl font-black text-white">{p.scorerRank ? `#${p.scorerRank}` : "—"}</p>
           <p className="text-[11px] font-bold uppercase tracking-wide text-white/45">{p.scorerRank ? t.player.rank(p.scorerRank) : t.player.unranked}</p>
+        </div>
+      </div>
+
+      {/* Pick popularity + actions */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <p className="text-xs font-bold uppercase tracking-[1.5px] text-white/40">{t.player.predictions}</p>
+        <p className="mt-1.5 text-sm text-white/75">
+          🔮 {t.player.pickedBy(p.pickCount)}
+          {p.bootCount > 0 && <span className="text-[var(--bn-gold)]"> · 🥇 {t.player.asBoot(p.bootCount)}</span>}
+        </p>
+        <div className="mt-3">
+          <ProfilePickActions playerId={p.id} inMyTop10={p.inMyTop10} isMyGoldenBoot={p.isMyGoldenBoot} locked={p.locked} />
         </div>
       </div>
     </main>

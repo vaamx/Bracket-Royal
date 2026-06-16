@@ -268,6 +268,13 @@ export const en = {
     yourGoldenBoot: "Your Golden Boot 🥇",
     notFound: "Player not found",
     back: "Back",
+    predictions: "Predictions",
+    pickedBy: (n: number) => `Picked by ${n} ${n === 1 ? "predictor" : "predictors"}`,
+    asBoot: (n: number) => `${n} as Golden Boot`,
+    addPick: "Add to my Top 10",
+    makeBoot: "Make Golden Boot",
+    removePick: "Remove from my picks",
+    pickLocked: "Picks are locked.",
   },
   meta: {
     title: "Bracket Royale · World Cup 2026 Predictions",
