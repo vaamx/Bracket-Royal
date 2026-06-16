@@ -11,7 +11,9 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "seed": "tsx scripts/seed.ts",
-    "simulate": "tsx scripts/simulate.ts"
+    "simulate": "tsx scripts/simulate.ts",
+    "ingest:wc": "tsx scripts/ingest-wc.ts",
+    "refresh:wc": "tsx scripts/refresh-wc.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
