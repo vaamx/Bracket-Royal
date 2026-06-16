@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { runScoring, resolveAndAdvance, applyResults } from "@/lib/scoring/run";
 import { refreshWorldCupResults, fetchKnockoutFinals, knockoutResultsByTeamPair } from "@/lib/feed/ingestWorldCup";
+import { refreshScorerGoals } from "@/lib/feed/ingestPlayers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,7 @@ export async function GET(request: Request) {
       await resolveAndAdvance(admin);
     }
 
+    try { await refreshScorerGoals(admin); } catch (e) { console.error("scorer refresh failed", e); }
     const scored = await runScoring(admin);
     return NextResponse.json({ updated, finished, koApplied, ...scored });
   } catch (e) {
