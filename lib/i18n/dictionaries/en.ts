@@ -124,6 +124,8 @@ export const en = {
     champion: "Champion",
     predictedScore: "Predicted score (90 min)",
     scoreHint: "Tap who advances, and optionally call the 90-minute scoreline for bonus points.",
+    tbd: "To be decided",
+    advances: "ADVANCES",
     notReadyTitle: "Bracket isn't ready yet",
     notReadyBody: "The tournament data hasn't been imported. Your knockout bracket will appear here once the groups are in.",
     adminRun: "Admin: run",
@@ -190,6 +192,17 @@ export const en = {
     emailSave: "Save email reminders",
     emailOn: "Email reminders on.",
     saved: "Saved.",
+  },
+  badges: {
+    bullseye: { label: "Bullseye", desc: "Nailed an exact scoreline" },
+    sharpshooter: { label: "Sharpshooter", desc: "5+ exact scorelines" },
+    perfect_group: { label: "Perfect Group", desc: "Every match in a group spot-on" },
+    hot_streak: { label: "On Fire", desc: "3 exact scorelines in a row" },
+    oracle: { label: "Oracle", desc: "Called the champion" },
+  } as Record<string, { label: string; desc: string }>,
+  meta: {
+    title: "Bracket Royale · World Cup 2026 Predictions",
+    description: "Predict every match, build your knockout bracket, and climb the live leaderboard with friends.",
   },
   lang: {
     label: "Language",

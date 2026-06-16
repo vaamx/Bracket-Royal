@@ -14,11 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Bracket Royale · World Cup 2026 Predictions",
-  description:
-    "Predict every match, build your knockout bracket, and climb the live leaderboard with friends.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getT();
+  return { title: t.meta.title, description: t.meta.description };
+}
 
 export default async function RootLayout({
   children,

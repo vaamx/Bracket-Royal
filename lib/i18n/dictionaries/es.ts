@@ -126,6 +126,8 @@ export const es: Dictionary = {
     champion: "Campeón",
     predictedScore: "Marcador previsto (90 min)",
     scoreHint: "Toca quién avanza y, si quieres, pronostica el marcador de los 90 minutos para puntos extra.",
+    tbd: "Por definir",
+    advances: "AVANZA",
     notReadyTitle: "El cuadro aún no está listo",
     notReadyBody: "Los datos del torneo no se han importado. Tu cuadro de eliminatorias aparecerá aquí cuando estén los grupos.",
     adminRun: "Admin: ejecuta",
@@ -192,6 +194,17 @@ export const es: Dictionary = {
     emailSave: "Guardar recordatorios por correo",
     emailOn: "Recordatorios por correo activados.",
     saved: "Guardado.",
+  },
+  badges: {
+    bullseye: { label: "Diana", desc: "Acertaste un marcador exacto" },
+    sharpshooter: { label: "Francotirador", desc: "5+ marcadores exactos" },
+    perfect_group: { label: "Grupo perfecto", desc: "Todos los partidos de un grupo exactos" },
+    hot_streak: { label: "En racha", desc: "3 marcadores exactos seguidos" },
+    oracle: { label: "Oráculo", desc: "Acertaste al campeón" },
+  },
+  meta: {
+    title: "Bracket Royale · Predicciones del Mundial 2026",
+    description: "Predice cada partido, arma tu cuadro de eliminatorias y sube en la tabla en vivo con amigos.",
   },
   lang: {
     label: "Idioma",

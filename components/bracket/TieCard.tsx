@@ -6,17 +6,19 @@ import { ScoreInput } from "@/components/predict/ScoreInput";
 import { useI18n } from "@/lib/i18n/provider";
 
 function TeamRow({
-  teamId, team, picked, decided, locked, onPick,
+  teamId, team, picked, decided, locked, tbd, advancesLabel, onPick,
 }: {
   teamId?: string;
   team?: BracketTeam;
   picked: boolean;
   decided: boolean;
   locked: boolean;
+  tbd: string;
+  advancesLabel: string;
   onPick: () => void;
 }) {
   const empty = !teamId;
-  const label = team?.name ?? "To be decided";
+  const label = team?.name ?? tbd;
   const loser = decided && !picked;
   return (
     <motion.button
@@ -51,7 +53,7 @@ function TeamRow({
           animate={{ scale: 1, opacity: 1 }}
           className="ml-auto rounded-full bg-[var(--bn-gold)] px-2 py-0.5 text-[10px] font-black tracking-wide text-[#0a1428]"
         >
-          ADVANCES
+          {advancesLabel}
         </motion.span>
       )}
     </motion.button>
@@ -94,6 +96,7 @@ export function TieCard({
       )}
       <TeamRow
         teamId={home} team={homeTeam} picked={pick === home} decided={decided} locked={locked}
+        tbd={t.bracket.tbd} advancesLabel={t.bracket.advances}
         onPick={() => home && onPick(home)}
       />
       <div className="relative flex items-center px-4">
@@ -103,6 +106,7 @@ export function TieCard({
       </div>
       <TeamRow
         teamId={away} team={awayTeam} picked={pick === away} decided={decided} locked={locked}
+        tbd={t.bracket.tbd} advancesLabel={t.bracket.advances}
         onPick={() => away && onPick(away)}
       />
 
