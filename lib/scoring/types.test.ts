@@ -24,8 +24,8 @@ describe("parseScoringConfig", () => {
   });
 
   it("defaults the scorer block and merges partial overrides", () => {
-    expect(DEFAULT_SCORING_CONFIG.scorer).toEqual({ hit: 8, boot: 30, bootExact: 10 });
+    expect(DEFAULT_SCORING_CONFIG.scorer).toEqual({ hit: 8, boot: 30, bootExact: 10, goalsExact: 5, goalsClose: 2 });
     const merged = parseScoringConfig({ scorer: { boot: 50 } });
-    expect(merged.scorer).toEqual({ hit: 8, boot: 50, bootExact: 10 });
+    expect(merged.scorer).toEqual({ hit: 8, boot: 50, bootExact: 10, goalsExact: 5, goalsClose: 2 });
   });
 });

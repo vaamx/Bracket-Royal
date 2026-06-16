@@ -47,13 +47,17 @@ export async function setGoldenBoot(playerId: string) {
   return { ok: true as const };
 }
 
-export async function setBootGoals(predictedGoals: number | null) {
+/** Set a predicted goal tally for one of the user's picks (any player, not just the boot). */
+export async function setPickGoals(playerId: string, predictedGoals: number | null) {
   const ctx = await userOrThrow();
   if ("error" in ctx) return ctx;
   const { supabase, userId } = ctx;
   const g = predictedGoals == null ? null : Math.max(0, Math.min(30, Math.floor(predictedGoals)));
-  const { error } = await supabase.from("scorer_predictions").update({ predicted_goals: g }).eq("user_id", userId).eq("is_golden_boot", true);
+  const { error } = await supabase
+    .from("scorer_predictions").update({ predicted_goals: g })
+    .eq("user_id", userId).eq("player_id", playerId);
   if (error) return { error: "db" as const };
   revalidatePath("/scorers");
+  revalidatePath(`/players/${playerId}`);
   return { ok: true as const };
 }

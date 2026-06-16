@@ -35,10 +35,10 @@ export async function getContenders(): Promise<PlayerLite[]> {
   return withFlags(data ?? []);
 }
 
-export async function getMyScorerBoard(): Promise<{ picks: PlayerLite[]; bootId: string | null; bootGoals: number | null }> {
+export async function getMyScorerBoard(): Promise<{ picks: PlayerLite[]; bootId: string | null; goalsByPlayer: Record<string, number | null> }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { picks: [], bootId: null, bootGoals: null };
+  if (!user) return { picks: [], bootId: null, goalsByPlayer: {} };
   const { data: preds } = await supabase.from("scorer_predictions").select("player_id, is_golden_boot, predicted_goals").eq("user_id", user.id);
   const ids = (preds ?? []).map((p) => p.player_id);
   let picks: PlayerLite[] = [];
@@ -46,8 +46,10 @@ export async function getMyScorerBoard(): Promise<{ picks: PlayerLite[]; bootId:
     const { data: rows } = await supabase.from("players").select("id, name, team_id, goals, scorer_rank").in("id", ids);
     picks = await withFlags(rows ?? []);
   }
+  const goalsByPlayer: Record<string, number | null> = {};
+  for (const p of preds ?? []) goalsByPlayer[p.player_id] = p.predicted_goals;
   const boot = (preds ?? []).find((p) => p.is_golden_boot);
-  return { picks, bootId: boot?.player_id ?? null, bootGoals: boot?.predicted_goals ?? null };
+  return { picks, bootId: boot?.player_id ?? null, goalsByPlayer };
 }
 
 export async function getActualTop10(): Promise<PlayerLite[]> {

@@ -28,4 +28,39 @@ describe("scoreUserScorers", () => {
     const { points } = scoreUserScorers({ picks: ["X","Y"], goldenBootId: "X", goldenBootPredictedGoals: 3, ...base });
     expect(points).toBe(0);
   });
+  it("awards exact per-pick goal bonus when a pick's predicted tally is spot-on", () => {
+    const { points } = scoreUserScorers({
+      picks: ["B"], goldenBootId: null, goldenBootPredictedGoals: null, ...base,
+      pickPredictedGoals: { B: 4 }, actualGoalsByPlayer: { B: 4 },
+    });
+    expect(points).toBe(cfg.scorer.hit + cfg.scorer.goalsExact);
+  });
+  it("awards the close per-pick bonus when within one goal", () => {
+    const { points } = scoreUserScorers({
+      picks: ["B"], goldenBootId: null, goldenBootPredictedGoals: null, ...base,
+      pickPredictedGoals: { B: 3 }, actualGoalsByPlayer: { B: 4 },
+    });
+    expect(points).toBe(cfg.scorer.hit + cfg.scorer.goalsClose);
+  });
+  it("treats a missing actual goal tally as zero for per-pick scoring", () => {
+    const { points } = scoreUserScorers({
+      picks: ["X"], goldenBootId: null, goldenBootPredictedGoals: null, ...base,
+      pickPredictedGoals: { X: 0 },
+    });
+    expect(points).toBe(cfg.scorer.goalsExact); // X not in top10, predicted 0 == actual 0
+  });
+  it("no per-pick goal bonus when off by two or more", () => {
+    const { points } = scoreUserScorers({
+      picks: ["B"], goldenBootId: null, goldenBootPredictedGoals: null, ...base,
+      pickPredictedGoals: { B: 1 }, actualGoalsByPlayer: { B: 4 },
+    });
+    expect(points).toBe(cfg.scorer.hit);
+  });
+  it("stacks boot exact and per-pick exact for a perfectly-called golden boot", () => {
+    const { points } = scoreUserScorers({
+      picks: ["A"], goldenBootId: "A", goldenBootPredictedGoals: 7, ...base,
+      pickPredictedGoals: { A: 7 }, actualGoalsByPlayer: { A: 7 },
+    });
+    expect(points).toBe(cfg.scorer.hit + cfg.scorer.boot + cfg.scorer.bootExact + cfg.scorer.goalsExact);
+  });
 });
