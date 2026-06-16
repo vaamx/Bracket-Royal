@@ -69,6 +69,7 @@ export interface PlayerProfile {
   id: string; name: string; teamId: string | null; teamName: string | null; flag: string | null;
   position: string | null; goals: number; scorerRank: number | null;
   inMyTop10: boolean; isMyGoldenBoot: boolean;
+  myPredictedGoals: number | null; // the user's predicted goal tally for this player
   pickCount: number;  // how many predictors have this player in their Top 10
   bootCount: number;  // how many crowned them Golden Boot
   locked: boolean;    // scorer picks locked (R32 started)?
@@ -98,15 +99,15 @@ export async function getPlayerProfile(id: string): Promise<PlayerProfile | null
     const { data: team } = await supabase.from("teams").select("name, flag").eq("id", p.team_id).maybeSingle();
     teamName = team?.name ?? null; flag = team?.flag ?? null;
   }
-  let inMyTop10 = false, isMyGoldenBoot = false;
+  let inMyTop10 = false, isMyGoldenBoot = false, myPredictedGoals: number | null = null;
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    const { data: pick } = await supabase.from("scorer_predictions").select("is_golden_boot").eq("user_id", user.id).eq("player_id", id).maybeSingle();
-    if (pick) { inMyTop10 = true; isMyGoldenBoot = pick.is_golden_boot; }
+    const { data: pick } = await supabase.from("scorer_predictions").select("is_golden_boot, predicted_goals").eq("user_id", user.id).eq("player_id", id).maybeSingle();
+    if (pick) { inMyTop10 = true; isMyGoldenBoot = pick.is_golden_boot; myPredictedGoals = pick.predicted_goals; }
   }
   const [{ pickCount, bootCount }, locked] = await Promise.all([playerPickCounts(id), scorersLocked()]);
   return {
     id: p.id, name: p.name, teamId: p.team_id, teamName, flag, position: p.position, goals: p.goals, scorerRank: p.scorer_rank,
-    inMyTop10, isMyGoldenBoot, pickCount, bootCount, locked,
+    inMyTop10, isMyGoldenBoot, myPredictedGoals, pickCount, bootCount, locked,
   };
 }
