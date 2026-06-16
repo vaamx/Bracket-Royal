@@ -2,9 +2,9 @@ export type KnockoutStage = "r32" | "r16" | "qf" | "sf" | "final" | "third";
 
 /** Which qualifier fills an R32 slot. */
 export type SlotSpec =
-  | { kind: "winner"; group: string }   // 1st of group
-  | { kind: "runner"; group: string }   // 2nd of group
-  | { kind: "third"; seed: number };     // best-third rank index 0..7
+  | { kind: "winner"; group: string }    // 1st of group
+  | { kind: "runner"; group: string }    // 2nd of group
+  | { kind: "third"; cluster: string[] }; // a best-3rd from one of these groups (assigned by the official combination)
 
 /** Where a match's winner (and, for semis, loser) flows next. */
 export interface Feed {

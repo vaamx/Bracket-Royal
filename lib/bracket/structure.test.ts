@@ -18,10 +18,11 @@ describe("knockout structure", () => {
     expect(specs).toHaveLength(32);
     const winners = specs.filter((s) => s.kind === "winner").map((s) => (s as { group: string }).group).sort();
     const runners = specs.filter((s) => s.kind === "runner").map((s) => (s as { group: string }).group).sort();
-    const thirds = specs.filter((s) => s.kind === "third").map((s) => (s as { seed: number }).seed).sort((a, b) => a - b);
+    const thirds = specs.filter((s) => s.kind === "third");
     expect(winners).toEqual(["A","B","C","D","E","F","G","H","I","J","K","L"]);
     expect(runners).toEqual(["A","B","C","D","E","F","G","H","I","J","K","L"]);
-    expect(thirds).toEqual([0,1,2,3,4,5,6,7]);
+    expect(thirds).toHaveLength(8); // 8 third-place slots, each with an eligible-group cluster
+    for (const s of thirds) expect((s as { cluster: string[] }).cluster.length).toBeGreaterThan(0);
   });
 
   it("wires every non-terminal match's winner into a valid later slot", () => {
