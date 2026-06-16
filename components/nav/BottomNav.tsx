@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const TABS = [
-  { href: "/predict", label: "Predict", icon: "⚽" },
-  { href: "/bracket", label: "Bracket", icon: "🏆" },
-  { href: "/leagues", label: "Leagues", icon: "👥" },
-  { href: "/settings", label: "Account", icon: "⚙️" },
-];
+import { useI18n } from "@/lib/i18n/provider";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
+  const TABS = [
+    { href: "/predict", label: t.nav.predict, icon: "⚽" },
+    { href: "/bracket", label: t.nav.bracket, icon: "🏆" },
+    { href: "/leagues", label: t.nav.leagues, icon: "👥" },
+    { href: "/settings", label: t.nav.account, icon: "⚙️" },
+  ];
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[var(--bn-bg-deep)]/95 backdrop-blur">
       <div className="mx-auto flex max-w-md">

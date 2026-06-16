@@ -4,28 +4,30 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/(app)/leagues/actions";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { getT } from "@/lib/i18n";
 import { SettingsClient } from "./settings-client";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
+  const { t } = await getT();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/");
   const isAnon = user.is_anonymous === true;
   const { data: prefs } = await supabase
     .from("notification_prefs").select("push_enabled, email_enabled, email").eq("user_id", user.id).maybeSingle();
 
-  let name = "Guest";
+  let name = t.common.guest;
   if (!isAnon) {
     const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-    name = profile?.display_name ?? "Player";
+    name = profile?.display_name ?? t.common.player;
   }
-  const subtitle = isAnon ? "Playing as a guest" : user.email ?? "Signed in";
+  const subtitle = isAnon ? t.settings.playingGuest : user.email ?? t.settings.signedIn;
 
   return (
     <main className="mx-auto max-w-md space-y-5 p-6">
       <div>
-        <p className="text-xs font-bold tracking-[2px] text-[var(--bn-accent)]">ACCOUNT</p>
-        <h1 className="text-2xl font-black">Settings</h1>
+        <p className="text-xs font-bold tracking-[2px] text-[var(--bn-accent)]">{t.settings.eyebrow}</p>
+        <h1 className="text-2xl font-black">{t.settings.title}</h1>
       </div>
 
       <Card className="space-y-4">
@@ -40,12 +42,12 @@ export default async function SettingsPage() {
         </div>
         {isAnon ? (
           <>
-            <p className="text-sm text-white/60">Sign in to save your picks across devices and compete in private leagues.</p>
-            <Link href="/login"><Button className="w-full">Sign in / Create account</Button></Link>
+            <p className="text-sm text-white/60">{t.settings.signInToSave}</p>
+            <Link href="/login"><Button className="w-full">{t.common.signInCreate}</Button></Link>
           </>
         ) : (
           <form action={signOut}>
-            <Button variant="ghost" className="w-full">Sign out</Button>
+            <Button variant="ghost" className="w-full">{t.common.signOut}</Button>
           </form>
         )}
       </Card>
@@ -61,8 +63,8 @@ export default async function SettingsPage() {
         <a href="/api/calendar" className="flex items-center gap-3">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/5 text-xl" aria-hidden>📅</span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">Add to your calendar</p>
-            <p className="text-xs text-white/45">Match deadlines as calendar events</p>
+            <p className="text-sm font-bold">{t.settings.calendarTitle}</p>
+            <p className="text-xs text-white/45">{t.settings.calendarSub}</p>
           </div>
           <span className="text-white/40">›</span>
         </a>

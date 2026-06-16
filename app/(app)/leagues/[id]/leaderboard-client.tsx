@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import type { StandingRow } from "@/lib/leaderboard/queries";
+import { useI18n } from "@/lib/i18n/provider";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -14,6 +15,7 @@ export function LeaderboardClient({
   initialRows: StandingRow[];
   meId?: string | null;
 }) {
+  const { t } = useI18n();
   const [rows, setRows] = useState<StandingRow[]>(initialRows);
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export function LeaderboardClient({
     return (
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-10 text-center">
         <div className="text-3xl">📊</div>
-        <p className="mt-2 text-sm text-white/50">No scores yet — predictions are graded as results come in.</p>
+        <p className="mt-2 text-sm text-white/50">{t.leagues.noScores}</p>
       </div>
     );
   }
@@ -86,11 +88,11 @@ export function LeaderboardClient({
                 </span>
                 <span className="truncate font-semibold">
                   {r.displayName}
-                  {isMe && <span className="ml-1.5 text-[10px] font-bold text-[var(--bn-gold)]">YOU</span>}
+                  {isMe && <span className="ml-1.5 text-[10px] font-bold text-[var(--bn-gold)]">{t.leagues.yourPosition.toUpperCase()}</span>}
                 </span>
               </span>
               <span className="flex shrink-0 items-center gap-3 text-sm">
-                <span className="text-white/40">{r.exactCount} exact</span>
+                <span className="text-white/40">{t.leagues.exact(r.exactCount)}</span>
                 <span className="font-black tabular-nums text-[var(--bn-gold)]">{r.points}</span>
               </span>
             </motion.li>
@@ -107,11 +109,11 @@ export function LeaderboardClient({
                 {MEDALS[myIndex] ?? myIndex + 1}
               </span>
               <span className="truncate font-bold">
-                You <span className="text-white/40">· {rows.length} {rows.length === 1 ? "player" : "players"}</span>
+                {t.leagues.yourPosition} <span className="text-white/40">· {t.common.players(rows.length)}</span>
               </span>
             </span>
             <span className="flex shrink-0 items-center gap-3 text-sm">
-              <span className="text-white/40">{me.exactCount} exact</span>
+              <span className="text-white/40">{t.leagues.exact(me.exactCount)}</span>
               <span className="font-black tabular-nums text-[var(--bn-gold)]">{me.points}</span>
             </span>
           </div>

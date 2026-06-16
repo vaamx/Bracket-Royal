@@ -12,6 +12,7 @@ import { BracketTree } from "@/components/bracket/BracketTree";
 import { ShareBracket } from "@/components/bracket/ShareBracket";
 import type { BracketData } from "@/lib/bracket/queries";
 import { useCelebration } from "@/lib/celebrate/useCelebration";
+import { useI18n } from "@/lib/i18n/provider";
 
 type Stage = BracketData["matches"][number]["stage"];
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -37,6 +38,15 @@ function lockedById(matches: BracketData["matches"]): Record<string, boolean> {
 export function BracketClient({ data }: { data: BracketData }) {
   const supabase = useMemo(() => createClient(), []);
   const celebrate = useCelebration();
+  const { t } = useI18n();
+  const roundLabel: Record<Stage, string> = {
+    r32: t.bracket.roundOf32, r16: t.bracket.roundOf16, qf: t.bracket.quarterfinals,
+    sf: t.bracket.semifinals, final: t.bracket.theFinal, third: t.bracket.final,
+  };
+  const tieLabel: Record<Stage, string> = {
+    r32: t.bracket.roundOf32, r16: t.bracket.roundOf16, qf: t.bracket.quarterfinal,
+    sf: t.bracket.semifinal, final: t.bracket.final, third: t.bracket.final,
+  };
   const [picks, setPicks] = useState<Record<string, string>>(data.picks);
   const [round, setRound] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>("tree");
@@ -97,7 +107,7 @@ export function BracketClient({ data }: { data: BracketData }) {
   const matchIds = stageMatchIds(r.stage);
   const champion = view["F-1"]?.pick;
 
-  const statusLabel = status === "saving" ? "Saving…" : status === "error" ? "Couldn't save — check your connection" : status === "saved" ? "Saved" : "";
+  const statusLabel = status === "saving" ? t.common.saving : status === "error" ? t.common.saveFailed : status === "saved" ? t.common.savedAll : "";
 
   const roundDone = roundCounts[r.stage]?.done ?? 0;
   const roundTotal = roundCounts[r.stage]?.total ?? 0;
@@ -111,9 +121,9 @@ export function BracketClient({ data }: { data: BracketData }) {
       {/* Overall progress + view toggle */}
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-bold tracking-[2px] text-[var(--bn-accent)]">YOUR BRACKET</span>
+          <span className="font-bold tracking-[2px] text-[var(--bn-accent)]">{t.bracket.yourBracket}</span>
           <span className="font-bold text-white/60">
-            {seeded ? `${totalDone}/${totalTies} ties called` : `${data.groupsReady}/${data.groupsTotal} groups`}
+            {seeded ? t.bracket.tiesCalled(totalDone, totalTies) : t.bracket.groupsShort(data.groupsReady, data.groupsTotal)}
           </span>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -135,7 +145,7 @@ export function BracketClient({ data }: { data: BracketData }) {
                   (viewMode === m ? "bg-[var(--bn-gold)] text-[#0a1428]" : "text-white/55")
                 }
               >
-                {m === "tree" ? "Bracket" : "Round by round"}
+                {m === "tree" ? t.bracket.tabBracket : t.bracket.tabRoundByRound}
               </button>
             ))}
           </div>
@@ -144,26 +154,20 @@ export function BracketClient({ data }: { data: BracketData }) {
 
       {!seeded && (
         <div className="rounded-2xl border border-[var(--bn-gold)]/30 bg-[var(--bn-gold)]/[0.07] p-4">
-          <p className="text-center text-sm font-bold text-white">How your bracket works</p>
+          <p className="text-center text-sm font-bold text-white">{t.bracket.howTitle}</p>
           <ol className="mt-3 space-y-2 text-sm text-white/75">
-            <li className="flex gap-2.5">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--bn-gold)] text-[11px] font-black text-[#0a1428]">1</span>
-              <span>Predict all <span className="font-semibold text-white">12 groups</span> on the Predict tab.</span>
-            </li>
-            <li className="flex gap-2.5">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--bn-gold)] text-[11px] font-black text-[#0a1428]">2</span>
-              <span>Your qualifiers — top 2 plus the best third-placed teams — <span className="font-semibold text-white">fill the Round of 32</span> below.</span>
-            </li>
-            <li className="flex gap-2.5">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--bn-gold)] text-[11px] font-black text-[#0a1428]">3</span>
-              <span><span className="font-semibold text-white">Tap a team to advance them</span> — winners flow into the next round all the way to the final.</span>
-            </li>
+            {[t.bracket.howStep1, t.bracket.howStep2, t.bracket.howStep3].map((step, i) => (
+              <li key={i} className="flex gap-2.5">
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--bn-gold)] text-[11px] font-black text-[#0a1428]">{i + 1}</span>
+                <span>{step}</span>
+              </li>
+            ))}
           </ol>
           <Link
             href="/predict"
             className="mt-4 block rounded-full bg-gradient-to-r from-[#d4af37] to-[#f4d56a] px-5 py-2.5 text-center text-sm font-extrabold text-[#0a1428]"
           >
-            {data.groupsReady > 0 ? `Finish your group picks (${data.groupsReady}/${data.groupsTotal}) →` : "Start predicting the group stage →"}
+            {data.groupsReady > 0 ? t.bracket.finishPicks(data.groupsReady, data.groupsTotal) : t.bracket.startPredicting}
           </Link>
         </div>
       )}
@@ -183,11 +187,7 @@ export function BracketClient({ data }: { data: BracketData }) {
 
       {effectiveMode === "tree" ? (
         <>
-          {seeded && (
-            <p className="text-xs text-white/45">
-              Tap a team to advance them — winners flow through the whole bracket. Scroll sideways to reach the final, or switch to <span className="font-semibold text-white/70">Round by round</span> above for bigger one-tie-at-a-time picking.
-            </p>
-          )}
+          {seeded && <p className="text-xs text-white/45">{t.bracket.tapHintTree}</p>}
           <BracketTree view={view} teams={data.teams} locks={locks} onPick={onPick} />
           <p className={"text-center text-xs " + (status === "error" ? "text-red-400" : "text-white/40")}>{statusLabel}</p>
         </>
@@ -196,8 +196,8 @@ export function BracketClient({ data }: { data: BracketData }) {
       <RoundStepper rounds={STEPPER_ROUNDS} active={round} counts={roundCounts} onSelect={setRound} />
 
       <div className="flex items-end justify-between">
-        <h1 className="text-2xl font-black">{r.label}</h1>
-        <span className="pb-1 text-xs font-bold text-white/45">{roundDone}/{roundTotal} picked</span>
+        <h1 className="text-2xl font-black">{roundLabel[r.stage]}</h1>
+        <span className="pb-1 text-xs font-bold text-white/45">{t.predict.predicted(roundDone, roundTotal)}</span>
       </div>
 
       {r.stage === "final" && champion ? (
@@ -207,13 +207,13 @@ export function BracketClient({ data }: { data: BracketData }) {
           className="rounded-2xl border border-[var(--bn-gold)]/50 bg-gradient-to-b from-[var(--bn-gold)]/20 to-transparent p-5 text-center shadow-[0_0_40px_-16px_rgba(212,175,55,0.8)]"
         >
           <div className="text-4xl">🏆</div>
-          <p className="mt-1 text-xs font-bold uppercase tracking-[2px] text-white/60">Your champion</p>
+          <p className="mt-1 text-xs font-bold uppercase tracking-[2px] text-white/60">{t.bracket.yourChampion}</p>
           <p className="text-2xl font-black text-[var(--bn-gold)]">
             {data.teams[champion]?.flag} {data.teams[champion]?.name ?? champion}
           </p>
         </motion.div>
       ) : (
-        <p className="text-xs text-white/45">Tap the team you think advances. Winners flow into the next round automatically.</p>
+        <p className="text-xs text-white/45">{t.bracket.tapHintList}</p>
       )}
 
       <div className="space-y-3">
@@ -222,7 +222,7 @@ export function BracketClient({ data }: { data: BracketData }) {
           return (
             <TieCard
               key={id}
-              label={r.stage === "final" ? "Final" : `${r.tie} · ${i + 1}`}
+              label={r.stage === "final" ? t.bracket.final : `${tieLabel[r.stage]} · ${i + 1}`}
               home={v.homeTeamId}
               away={v.awayTeamId}
               homeTeam={v.homeTeamId ? data.teams[v.homeTeamId] : undefined}
@@ -236,9 +236,9 @@ export function BracketClient({ data }: { data: BracketData }) {
       </div>
 
       <div className="flex items-center justify-between pt-1">
-        <button disabled={round === 0} onClick={() => setRound((x) => Math.max(0, x - 1))} className="rounded-full px-4 py-2 text-sm font-semibold text-white/50 disabled:opacity-30">← Back</button>
+        <button disabled={round === 0} onClick={() => setRound((x) => Math.max(0, x - 1))} className="rounded-full px-4 py-2 text-sm font-semibold text-white/50 disabled:opacity-30">← {t.common.back}</button>
         <span className={"text-xs " + (status === "error" ? "text-red-400" : "text-white/40")}>{statusLabel}</span>
-        <button disabled={round === ROUNDS.length - 1} onClick={() => setRound((x) => Math.min(ROUNDS.length - 1, x + 1))} className="rounded-full bg-[var(--bn-gold)]/15 px-4 py-2 text-sm font-bold text-[var(--bn-gold)] disabled:opacity-30">Next →</button>
+        <button disabled={round === ROUNDS.length - 1} onClick={() => setRound((x) => Math.min(ROUNDS.length - 1, x + 1))} className="rounded-full bg-[var(--bn-gold)]/15 px-4 py-2 text-sm font-bold text-[var(--bn-gold)] disabled:opacity-30">{t.common.next} →</button>
       </div>
       </>
       )}

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { KNOCKOUT_MATCHES, KNOCKOUT_BY_ID } from "@/lib/bracket/structure";
 import type { BracketTeam } from "@/lib/bracket/queries";
 import type { BracketSlotView } from "@/lib/bracket/userBracket";
+import { useI18n } from "@/lib/i18n/provider";
 
 // Layout geometry (px). The canvas is fixed-size and pans inside a scroll box.
 const COLW = 132;
@@ -13,9 +14,6 @@ const PAD_X = (COLW - CARD_W) / 2;
 const SLOT_R32 = 70;
 const HEADER_H = 28;
 const STAGES = ["r32", "r16", "qf", "sf", "final"] as const;
-const STAGE_LABELS: Record<string, string> = {
-  r32: "Round of 32", r16: "Round of 16", qf: "Quarters", sf: "Semis", final: "Final",
-};
 
 /** Post-order DFS from the final so each stage's list is top-to-bottom and a
  *  parent at index j is always fed by children 2j (home) and 2j+1 (away). */
@@ -82,7 +80,12 @@ export function BracketTree({
   locks: Record<string, boolean>;
   onPick: (matchId: string, teamId: string) => void;
 }) {
+  const { t } = useI18n();
   const { order, totalH } = useLayout();
+  const STAGE_LABELS: Record<string, string> = {
+    r32: t.bracket.roundOf32, r16: t.bracket.roundOf16, qf: t.bracket.quarters,
+    sf: t.bracket.semis, final: t.bracket.final,
+  };
 
   const colCount = STAGES.length;
   const champW = 120;
@@ -192,7 +195,7 @@ export function BracketTree({
               (champion ? "border-[var(--bn-gold)] bg-[var(--bn-gold)]/15 text-[var(--bn-gold)]" : "border-white/10 text-white/30")
             }
           >
-            {champion ? `${teams[champion]?.flag ?? ""} ${champion}` : "Champion"}
+            {champion ? `${teams[champion]?.flag ?? ""} ${champion}` : t.bracket.champion}
           </div>
         </div>
       </div>
