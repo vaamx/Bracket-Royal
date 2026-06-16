@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { sortStandingRows, type StandingRow } from "@/lib/leaderboard/types";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useI18n } from "@/lib/i18n/provider";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -80,10 +81,11 @@ export function LeaderboardClient({
               }
             >
               <Link href={`/leagues/${leagueId}/u/${r.userId}`} className="flex items-center justify-between px-4 py-3">
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="grid w-7 shrink-0 place-items-center text-center text-base font-extrabold text-[var(--bn-gold)]">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span className="grid w-6 shrink-0 place-items-center text-center text-base font-extrabold text-[var(--bn-gold)]">
                   {MEDALS[i] ?? i + 1}
                 </span>
+                <UserAvatar name={r.displayName ?? t.common.guest} size={32} highlight={isMe} />
                 <span className="truncate font-semibold">
                   {r.displayName ?? t.common.guest}
                   {isMe && <span className="ml-1.5 text-[10px] font-bold text-[var(--bn-gold)]">{t.leagues.yourPosition.toUpperCase()}</span>}
