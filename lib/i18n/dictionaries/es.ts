@@ -273,6 +273,7 @@ export const es: Dictionary = {
     crownPrompt: "Toca ☆ en una elección para coronar tu Bota de Oro 🥇",
     addPlayers: "Añadir jugadores",
     noActualYet: "Aún no hay goles — la tabla se llena a medida que se juegan los partidos.",
+    noResults: "Sin jugadores — prueba otra forma de escribirlo.",
     goals: (n: number) => `${n} ${n === 1 ? "gol" : "goles"}`,
     inTop10: "En el Top 10",
     errMax: "Solo puedes elegir 10 jugadores.",

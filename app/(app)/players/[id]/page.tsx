@@ -3,14 +3,7 @@ import { getPlayerProfile } from "@/lib/players/queries";
 import { DEFAULT_SCORING_CONFIG } from "@/lib/scoring/types";
 import { getT } from "@/lib/i18n";
 import { ProfilePickActions } from "@/components/players/ProfilePickActions";
-
-/** Two-letter initials for the generated avatar (first + last name word). */
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase() || "?";
-}
+import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
 export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -34,9 +27,8 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
       {/* Hero card: generated avatar + identity */}
       <div className={"relative overflow-hidden rounded-3xl border p-6 text-center " + (p.isMyGoldenBoot ? "border-[var(--bn-gold)]/50 bg-gradient-to-b from-[var(--bn-gold)]/15 to-transparent" : "border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent")}>
         <div className="pointer-events-none absolute inset-x-0 -top-10 mx-auto h-40 w-40 rounded-full bg-[var(--bn-gold)]/10 blur-3xl" aria-hidden />
-        <div className="relative mx-auto grid h-24 w-24 place-items-center rounded-full bg-gradient-to-br from-[#1c2c4d] to-[#0a1428] text-3xl font-black text-white/90 ring-2 ring-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
-          {initialsOf(p.name)}
-          <span className="absolute -bottom-1 -right-1 grid h-9 w-9 place-items-center rounded-full bg-[var(--bn-bg-deep)] text-xl ring-2 ring-[var(--bn-bg-deep)]" aria-hidden>{p.flag ?? "🏳️"}</span>
+        <div className="relative mx-auto w-fit">
+          <PlayerAvatar name={p.name} flag={p.flag} size={96} boot={p.isMyGoldenBoot} />
           {p.isMyGoldenBoot && <span className="absolute -top-1 -left-1 text-2xl drop-shadow" aria-hidden>🥇</span>}
         </div>
         <p className="mt-3 text-xs font-bold tracking-[2px] text-[var(--bn-accent)]">{t.player.eyebrow}</p>
