@@ -17,8 +17,8 @@ export async function searchPlayers(q: string): Promise<PlayerLite[]> {
   const supabase = await createClient();
   const term = q.trim();
   if (term.length < 2) return [];
-  const { data } = await supabase.from("players").select("id, name, team_id, goals, scorer_rank").ilike("name", `%${term}%`).order("goals", { ascending: false }).limit(20);
-  return withFlags(data ?? []);
+  const { data } = await supabase.rpc("search_players", { q: term });
+  return withFlags((data ?? []) as { id: string; name: string; team_id: string | null; goals: number; scorer_rank: number | null }[]);
 }
 
 export async function getContenders(): Promise<PlayerLite[]> {
