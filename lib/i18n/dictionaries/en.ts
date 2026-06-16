@@ -256,6 +256,17 @@ export const en = {
     errGeneric: "Something went wrong — try again.",
     saved: "Saved",
   },
+  player: {
+    eyebrow: "PLAYER",
+    position: "Position",
+    wcGoals: "World Cup goals",
+    rank: (n: number) => `#${n} scorer`,
+    unranked: "No goals yet",
+    onYourTop10: "On your Top 10",
+    yourGoldenBoot: "Your Golden Boot 🥇",
+    notFound: "Player not found",
+    back: "Back",
+  },
   meta: {
     title: "Bracket Royale · World Cup 2026 Predictions",
     description: "Predict every match, build your knockout bracket, and climb the live leaderboard with friends.",

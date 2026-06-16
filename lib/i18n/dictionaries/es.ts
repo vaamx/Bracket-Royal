@@ -258,6 +258,17 @@ export const es: Dictionary = {
     errGeneric: "Algo salió mal — inténtalo de nuevo.",
     saved: "Guardado",
   },
+  player: {
+    eyebrow: "JUGADOR",
+    position: "Posición",
+    wcGoals: "Goles en el Mundial",
+    rank: (n: number) => `#${n} goleador`,
+    unranked: "Aún sin goles",
+    onYourTop10: "En tu Top 10",
+    yourGoldenBoot: "Tu Bota de Oro 🥇",
+    notFound: "Jugador no encontrado",
+    back: "Atrás",
+  },
   meta: {
     title: "Bracket Royale · Predicciones del Mundial 2026",
     description: "Predice cada partido, arma tu cuadro de eliminatorias y sube en la tabla en vivo con amigos.",
