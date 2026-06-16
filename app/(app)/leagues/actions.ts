@@ -11,10 +11,12 @@ import { generateInviteCode } from "@/lib/leagues/inviteCode";
  * they are real server actions, not plain functions captured in a page component.
  */
 export async function createLeagueForm(formData: FormData): Promise<void> {
-  await createLeague(formData);
+  const res = await createLeague(formData);
+  if ("ok" in res && res.id) redirect(`/leagues/${res.id}`);
 }
 export async function joinLeagueForm(formData: FormData): Promise<void> {
-  await joinLeague(formData);
+  const res = await joinLeague(formData);
+  if ("ok" in res && res.id) redirect(`/leagues/${res.id}`);
 }
 
 export async function setDisplayName(formData: FormData) {
@@ -50,7 +52,7 @@ export async function createLeague(formData: FormData) {
     }
     await supabase.from("league_members").insert({ league_id: league.id, user_id: user.id });
     revalidatePath("/leagues");
-    return { ok: true, code: league.invite_code };
+    return { ok: true as const, id: league.id as string, code: league.invite_code as string };
   }
   return { error: "Could not generate a unique invite code, try again" };
 }
@@ -61,10 +63,10 @@ export async function joinLeague(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { error } = await supabase.rpc("join_league_by_code", { p_code: code });
+  const { data, error } = await supabase.rpc("join_league_by_code", { p_code: code });
   if (error) return { error: "League not found for that code" };
   revalidatePath("/leagues");
-  return { ok: true };
+  return { ok: true as const, id: (data as { id?: string } | null)?.id };
 }
 
 export async function signOut() {
