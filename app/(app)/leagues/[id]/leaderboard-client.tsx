@@ -60,39 +60,63 @@ export function LeaderboardClient({
     );
   }
 
+  const myIndex = meId != null ? rows.findIndex((r) => r.userId === meId) : -1;
+  const me = myIndex >= 0 ? rows[myIndex] : null;
+
   return (
-    <ul className="space-y-2">
-      {rows.map((r, i) => {
-        const isMe = meId != null && r.userId === meId;
-        const medal = MEDALS[i];
-        return (
-          <motion.li
-            key={r.userId}
-            layout
-            transition={{ type: "spring", stiffness: 420, damping: 30 }}
-            className={
-              "flex items-center justify-between rounded-xl border px-4 py-3 " +
-              (isMe
-                ? "border-[var(--bn-gold)]/50 bg-[var(--bn-gold)]/10"
-                : "border-white/10 bg-white/[0.03]")
-            }
-          >
+    <>
+      <ul className="space-y-2">
+        {rows.map((r, i) => {
+          const isMe = meId != null && r.userId === meId;
+          return (
+            <motion.li
+              key={r.userId}
+              layout
+              transition={{ type: "spring", stiffness: 420, damping: 30 }}
+              className={
+                "flex items-center justify-between rounded-xl border px-4 py-3 " +
+                (isMe
+                  ? "border-[var(--bn-gold)]/50 bg-[var(--bn-gold)]/10"
+                  : "border-white/10 bg-white/[0.03]")
+              }
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="grid w-7 shrink-0 place-items-center text-center text-base font-extrabold text-[var(--bn-gold)]">
+                  {MEDALS[i] ?? i + 1}
+                </span>
+                <span className="truncate font-semibold">
+                  {r.displayName}
+                  {isMe && <span className="ml-1.5 text-[10px] font-bold text-[var(--bn-gold)]">YOU</span>}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-3 text-sm">
+                <span className="text-white/40">{r.exactCount} exact</span>
+                <span className="font-black tabular-nums text-[var(--bn-gold)]">{r.points}</span>
+              </span>
+            </motion.li>
+          );
+        })}
+      </ul>
+
+      {/* Sticky "your position" bar — always know where you stand while scrolling. */}
+      {me && (
+        <div className="pointer-events-none sticky bottom-24 z-30 mt-2">
+          <div className="pointer-events-auto flex items-center justify-between rounded-xl border border-[var(--bn-gold)]/60 bg-[#0c1730]/90 px-4 py-3 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.7)] backdrop-blur">
             <span className="flex min-w-0 items-center gap-3">
               <span className="grid w-7 shrink-0 place-items-center text-center text-base font-extrabold text-[var(--bn-gold)]">
-                {medal ?? i + 1}
+                {MEDALS[myIndex] ?? myIndex + 1}
               </span>
-              <span className="truncate font-semibold">
-                {r.displayName}
-                {isMe && <span className="ml-1.5 text-[10px] font-bold text-[var(--bn-gold)]">YOU</span>}
+              <span className="truncate font-bold">
+                You <span className="text-white/40">· {rows.length} {rows.length === 1 ? "player" : "players"}</span>
               </span>
             </span>
             <span className="flex shrink-0 items-center gap-3 text-sm">
-              <span className="text-white/40">{r.exactCount} exact</span>
-              <span className="font-black tabular-nums text-[var(--bn-gold)]">{r.points}</span>
+              <span className="text-white/40">{me.exactCount} exact</span>
+              <span className="font-black tabular-nums text-[var(--bn-gold)]">{me.points}</span>
             </span>
-          </motion.li>
-        );
-      })}
-    </ul>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
