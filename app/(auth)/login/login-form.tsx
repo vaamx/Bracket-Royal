@@ -59,6 +59,7 @@ export function LoginForm({ isAnonymous }: { isAnonymous: boolean }) {
           <div className="text-3xl">📬</div>
           <p className="mt-2 font-bold text-[var(--bn-success)]">{t.login.checkEmail}</p>
           <p className="mt-1 text-sm text-white/60">{t.login.sentTo(email)}</p>
+          <p className="mt-2 text-xs text-white/40">{t.login.checkSpam}</p>
         </div>
       ) : (
         <div className="space-y-4">

@@ -71,6 +71,7 @@ export const es: Dictionary = {
     sending: "Enviando…",
     checkEmail: "Revisa tu correo",
     sentTo: (email: string) => `Enviamos un enlace de acceso a ${email}.`,
+    checkSpam: "¿No llegó en un minuto? Revisa tu carpeta de spam.",
     skipGuest: "Omitir — seguir como invitado →",
   },
   authError: {

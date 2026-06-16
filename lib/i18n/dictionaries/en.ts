@@ -69,6 +69,7 @@ export const en = {
     sending: "Sending…",
     checkEmail: "Check your email",
     sentTo: (email: string) => `We sent a sign-in link to ${email}.`,
+    checkSpam: "Didn't get it within a minute? Check your spam folder.",
     skipGuest: "Skip — keep predicting as a guest →",
   },
   authError: {
