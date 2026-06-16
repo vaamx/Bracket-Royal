@@ -13,7 +13,7 @@ export async function getGroupsForPrediction(): Promise<PredictGroup[]> {
     supabase.from("teams").select("id, name, flag, group_label, fifa_rank"),
     supabase
       .from("matches")
-      .select("id, group_label, matchday, home_team_id, away_team_id, lock_at, status, home_score, away_score")
+      .select("id, group_label, matchday, home_team_id, away_team_id, kickoff_at, lock_at, status, home_score, away_score")
       .eq("stage", "group"),
   ]);
 
@@ -44,6 +44,7 @@ export async function getGroupsForPrediction(): Promise<PredictGroup[]> {
           matchday: m.matchday,
           homeTeamId: m.home_team_id,
           awayTeamId: m.away_team_id,
+          kickoffAt: m.kickoff_at,
           lockAt: m.lock_at,
           status: m.status,
           homeScore: m.home_score,

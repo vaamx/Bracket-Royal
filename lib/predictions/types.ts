@@ -10,6 +10,7 @@ export interface PredictMatch {
   matchday: number | null;
   homeTeamId: string;
   awayTeamId: string;
+  kickoffAt: string | null;
   lockAt: string | null;
   status: "scheduled" | "live" | "final";
   /** Actual result (Plan 4); null until played. */

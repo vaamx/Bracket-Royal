@@ -1,6 +1,7 @@
 "use client";
 
 import { ScoreInput } from "@/components/predict/ScoreInput";
+import { KickoffTime } from "@/components/predict/KickoffTime";
 import type { PredictMatch, PredictTeam } from "@/lib/predictions/types";
 import { outcomeOf } from "@/lib/math";
 
@@ -54,6 +55,20 @@ export function MatchRow({
           : "border-white/10 bg-white/[0.02]")
       }
     >
+      {/* Kickoff + status meta */}
+      <div className="mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-white/35">
+        <span className="flex items-center gap-1.5">
+          <KickoffTime iso={match.kickoffAt} />
+        </span>
+        {match.status === "live" ? (
+          <span className="flex items-center gap-1 text-red-400">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" /> Live
+          </span>
+        ) : !final && locked ? (
+          <span className="text-white/40">🔒 Locked</span>
+        ) : null}
+      </div>
+
       <div className="flex items-center gap-2">
         {/* Home */}
         <span className="flex w-[34%] items-center justify-end gap-1.5">
