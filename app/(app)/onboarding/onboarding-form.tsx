@@ -24,7 +24,8 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
   return (
     <Card className="space-y-4">
       <div>
-        <h1 className="text-2xl font-black">Pick your name</h1>
+        <p className="text-xs font-bold tracking-[2px] text-[var(--bn-accent)]">WELCOME 👋</p>
+        <h1 className="mt-1 text-2xl font-black">Pick your name</h1>
         <p className="mt-1 text-sm text-white/60">This is how friends will see you on the leaderboard.</p>
       </div>
       <form action={action} className="space-y-3">
