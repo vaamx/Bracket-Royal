@@ -13,6 +13,7 @@
     "seed": "tsx scripts/seed.ts",
     "simulate": "tsx scripts/simulate.ts",
     "ingest:wc": "tsx scripts/ingest-wc.ts",
+    "ingest:players": "tsx scripts/ingest-players.ts",
     "refresh:wc": "tsx scripts/refresh-wc.ts"
   },
   "dependencies": {
