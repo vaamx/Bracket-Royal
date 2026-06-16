@@ -18,6 +18,9 @@ export interface BracketMatchRow {
 export interface BracketData {
   resolved: boolean;                       // is the R32 filled (always true once groups have teams)?
   mode: "predicted" | "actual";            // predicted = from the user's group picks; actual = real qualifiers
+  seeded: boolean;                          // in predicted mode, has the user made enough picks to fill the bracket?
+  groupPicksMade: number;                   // # of group matches the user has predicted
+  groupMatchesTotal: number;                // # of group matches total
   teams: Record<string, BracketTeam>;       // teamId -> display
   r32: Record<string, { homeTeamId: string | null; awayTeamId: string | null }>;
   matches: BracketMatchRow[];               // all 32 KO matches (for lock/status)
@@ -52,12 +55,29 @@ export async function getBracketData(): Promise<BracketData> {
   const allGroupsFinal =
     groups.length > 0 && groups.every((g) => g.matches.length > 0 && g.matches.every((m) => m.status === "final"));
 
+  // How far along is the user's group stage? A match counts as "picked" when both
+  // scores are predicted. We only seed the predicted bracket once they've made a
+  // pick — otherwise we'd silently fill it with FIFA-rank favorites they never chose.
+  const allGroupMatches = groups.flatMap((g) => g.matches);
+  const groupMatchesTotal = allGroupMatches.length;
+  const groupPicksMade = allGroupMatches.filter(
+    (m) => m.predictedHome != null && m.predictedAway != null
+  ).length;
+
   const r32: BracketData["r32"] = {};
   let mode: "predicted" | "actual";
+  let seeded = true;
   if (allGroupsFinal) {
     mode = "actual";
     for (const m of matches) {
       if (m.stage === "r32") r32[m.id] = { homeTeamId: m.homeTeamId, awayTeamId: m.awayTeamId };
+    }
+  } else if (groupPicksMade === 0) {
+    // No picks yet: present an empty bracket and let the page prompt them to predict.
+    mode = "predicted";
+    seeded = false;
+    for (const m of matches) {
+      if (m.stage === "r32") r32[m.id] = { homeTeamId: null, awayTeamId: null };
     }
   } else {
     mode = "predicted";
@@ -74,7 +94,9 @@ export async function getBracketData(): Promise<BracketData> {
     for (const [id, tie] of predicted) r32[id] = { homeTeamId: tie.homeTeamId, awayTeamId: tie.awayTeamId };
   }
 
-  const resolved = Object.keys(r32).length === 16 && Object.values(r32).every((t) => t.homeTeamId && t.awayTeamId);
+  // "resolved" = the 16 R32 ties exist as a structure (groups + KO matches are loaded).
+  // Whether every slot has a team is governed separately by `seeded`.
+  const resolved = Object.keys(r32).length === 16;
 
   let picks: Record<string, string> = {};
   if (user) {
@@ -86,5 +108,8 @@ export async function getBracketData(): Promise<BracketData> {
     picks = Object.fromEntries((preds ?? []).map((p) => [p.match_id, p.predicted_winner_team_id as string]));
   }
 
-  return { resolved, mode, teams, r32, matches, picks, userId: user?.id ?? null };
+  return {
+    resolved, mode, seeded, groupPicksMade, groupMatchesTotal,
+    teams, r32, matches, picks, userId: user?.id ?? null,
+  };
 }
