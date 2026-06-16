@@ -7,6 +7,10 @@ export interface ScorerScoreInput {
   actualTop10: string[];
   actualTopScorerIds: string[];
   bootActualGoals: number | null;
+  /** Per-pick predicted goal tally (playerId -> goals), null/absent = no prediction. */
+  pickPredictedGoals?: Record<string, number | null>;
+  /** Actual tournament goals per player (playerId -> goals). Absent = 0. */
+  actualGoalsByPlayer?: Record<string, number>;
   config: LeagueScoringConfig;
 }
 
@@ -28,6 +32,18 @@ export function scoreUserScorers(input: ScorerScoreInput): { points: number } {
     input.goldenBootPredictedGoals === input.bootActualGoals
   ) {
     points += c.scorer.bootExact;
+  }
+  // Per-pick goal accuracy: reward nailing (exact) or nearly nailing (±1) each
+  // picked player's real goal tally. Applies to all of a user's Top-10 picks.
+  const predGoals = input.pickPredictedGoals ?? {};
+  const actualGoals = input.actualGoalsByPlayer ?? {};
+  for (const id of new Set(input.picks)) {
+    const pred = predGoals[id];
+    if (pred == null) continue;
+    const actual = actualGoals[id] ?? 0;
+    const diff = Math.abs(pred - actual);
+    if (diff === 0) points += c.scorer.goalsExact;
+    else if (diff === 1) points += c.scorer.goalsClose;
   }
   return { points };
 }

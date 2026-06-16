@@ -181,10 +181,12 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
   const topGoals = rankedPlayers.length ? rankedPlayers[0].goals : 0;
   const actualTopScorerIds = topGoals > 0 ? allPlayers.filter((p) => p.goals === topGoals).map((p) => p.id) : [];
   const goalsByPlayer = new Map(allPlayers.map((p) => [p.id, p.goals]));
-  const scorerByUser = new Map<string, { picks: string[]; bootId: string | null; bootGoals: number | null }>();
+  const actualGoalsByPlayer = Object.fromEntries(goalsByPlayer);
+  const scorerByUser = new Map<string, { picks: string[]; bootId: string | null; bootGoals: number | null; pickGoals: Record<string, number | null> }>();
   for (const r of scorerPredsRes.data ?? []) {
-    const e = scorerByUser.get(r.user_id) ?? { picks: [], bootId: null, bootGoals: null };
+    const e = scorerByUser.get(r.user_id) ?? { picks: [], bootId: null, bootGoals: null, pickGoals: {} };
     e.picks.push(r.player_id);
+    e.pickGoals[r.player_id] = r.predicted_goals;
     if (r.is_golden_boot) { e.bootId = r.player_id; e.bootGoals = r.predicted_goals; }
     scorerByUser.set(r.user_id, e);
   }
@@ -218,7 +220,8 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
       const scorer = sc
         ? scoreUserScorers({
             picks: sc.picks, goldenBootId: sc.bootId, goldenBootPredictedGoals: sc.bootGoals,
-            actualTop10, actualTopScorerIds, bootActualGoals: sc.bootId ? (goalsByPlayer.get(sc.bootId) ?? null) : null, config,
+            actualTop10, actualTopScorerIds, bootActualGoals: sc.bootId ? (goalsByPlayer.get(sc.bootId) ?? null) : null,
+            pickPredictedGoals: sc.pickGoals, actualGoalsByPlayer, config,
           }).points
         : 0;
       return { league_id: leagueId, user_id: userId, points: group.points + ko.points + scorer, exact_count: group.exactCount };

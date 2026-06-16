@@ -7,7 +7,7 @@ export interface LeagueScoringConfig {
   qualTop2: number;
   qualThird: number;
   ko: { r32: number; r16: number; qf: number; sf: number; champion: number; exactBonus: number };
-  scorer: { hit: number; boot: number; bootExact: number };
+  scorer: { hit: number; boot: number; bootExact: number; goalsExact: number; goalsClose: number };
 }
 
 export const DEFAULT_SCORING_CONFIG: LeagueScoringConfig = {
@@ -18,7 +18,7 @@ export const DEFAULT_SCORING_CONFIG: LeagueScoringConfig = {
   qualTop2: 2,
   qualThird: 2,
   ko: { r32: 10, r16: 15, qf: 25, sf: 40, champion: 60, exactBonus: 3 },
-  scorer: { hit: 8, boot: 30, bootExact: 10 },
+  scorer: { hit: 8, boot: 30, bootExact: 10, goalsExact: 5, goalsClose: 2 },
 };
 
 /** Parse a raw JSON scoring_config, falling back to defaults for any missing field. */

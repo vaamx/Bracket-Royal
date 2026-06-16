@@ -20,7 +20,7 @@ export default async function ScorersPage() {
         <p className="mt-1 text-sm text-white/60">{t.scorers.intro}</p>
         <p className="mt-1 text-xs text-white/40">{locked ? t.scorers.locked : t.scorers.lockHint}</p>
       </div>
-      <ScorersClient contenders={contenders} initialPicks={board.picks} initialBootId={board.bootId} initialBootGoals={board.bootGoals} locked={locked} />
+      <ScorersClient contenders={contenders} initialPicks={board.picks} initialBootId={board.bootId} initialGoals={board.goalsByPlayer} locked={locked} />
       <div>
         <div className="flex items-center gap-2">
           <p className="text-xs font-bold uppercase tracking-[1.5px] text-white/40">{t.scorers.actualTop10}</p>
