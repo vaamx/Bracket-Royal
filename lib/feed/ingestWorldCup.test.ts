@@ -81,4 +81,23 @@ describe("knockoutResultsByTeamPair", () => {
     ]);
     expect(r).toEqual([]);
   });
+
+  it("canonicalizes aliased TLAs so a feed code flip can't create a duplicate", () => {
+    // Uruguay is served as URU here but must map to the canonical URY in both the
+    // match id and the team ids, identical to a URY-served response.
+    const uru: FdMatch = {
+      id: 9, stage: "GROUP_STAGE", group: "GROUP_H", status: "FINISHED", utcDate: "2026-06-17T01:00:00Z",
+      homeTeam: { tla: "KSA", name: "Saudi Arabia" }, awayTeam: { tla: "URU", name: "Uruguay" },
+      score: { fullTime: { home: 1, away: 1 } },
+    };
+    const row = toGroupMatchRow(uru);
+    expect(row.id).toBe("GH-KSA-URY");
+    expect(row.away_team_id).toBe("URY");
+
+    const teams = deriveTeamRows([uru]);
+    const ury = teams.find((t) => t.id === "URY");
+    expect(ury).toBeDefined();
+    expect(ury!.flag).toBe("🇺🇾"); // not the 🏳️ fallback
+    expect(teams.some((t) => t.id === "URU")).toBe(false);
+  });
 });

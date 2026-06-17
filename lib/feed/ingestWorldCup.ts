@@ -13,6 +13,18 @@ export const FLAG_BY_TLA: Record<string, string> = {
   SWE: "🇸🇪", TUN: "🇹🇳", TUR: "🇹🇷", URY: "🇺🇾", USA: "🇺🇸", UZB: "🇺🇿",
 };
 
+/**
+ * football-data.org sometimes serves the same nation under more than one TLA
+ * depending on which cache node answers (Uruguay flips between URU and URY).
+ * Since refresh only upserts, an un-canonicalized code creates a *parallel*
+ * duplicate team + match set every time the feed flips. Map every known alias
+ * to one stable code so team ids and match ids stay identical regardless.
+ */
+export const TLA_ALIASES: Record<string, string> = { URU: "URY" };
+export function canonicalTla(tla: string): string {
+  return TLA_ALIASES[tla] ?? tla;
+}
+
 export type MatchStatus = "scheduled" | "live" | "final";
 
 export function mapStatus(fdStatus: string): MatchStatus {
@@ -73,17 +85,19 @@ export function toGroupMatchRow(m: FdMatch): GroupMatchRow {
   const final = status === "final";
   const hs = m.score?.fullTime?.home ?? null;
   const as = m.score?.fullTime?.away ?? null;
+  const home = canonicalTla(m.homeTeam.tla);
+  const away = canonicalTla(m.awayTeam.tla);
   let winner: string | null = null;
   if (final && hs !== null && as !== null) {
     const o = outcomeOf(hs, as);
-    winner = o === "home" ? m.homeTeam.tla : o === "away" ? m.awayTeam.tla : null;
+    winner = o === "home" ? home : o === "away" ? away : null;
   }
   return {
-    id: `G${g}-${m.homeTeam.tla}-${m.awayTeam.tla}`,
+    id: `G${g}-${home}-${away}`,
     stage: "group",
     group_label: g,
-    home_team_id: m.homeTeam.tla,
-    away_team_id: m.awayTeam.tla,
+    home_team_id: home,
+    away_team_id: away,
     kickoff_at: m.utcDate,
     lock_at: lockAtFor(m.utcDate),
     status,
@@ -99,8 +113,9 @@ export function deriveTeamRows(groupMatches: FdMatch[]): Array<{ id: string; nam
   for (const m of groupMatches) {
     const g = groupLetter(m.group)!;
     for (const t of [m.homeTeam, m.awayTeam]) {
-      if (!byId.has(t.tla)) {
-        byId.set(t.tla, { id: t.tla, name: t.name, flag: FLAG_BY_TLA[t.tla] ?? "🏳️", group_label: g, fifa_rank: null });
+      const id = canonicalTla(t.tla);
+      if (!byId.has(id)) {
+        byId.set(id, { id, name: t.name, flag: FLAG_BY_TLA[id] ?? "🏳️", group_label: g, fifa_rank: null });
       }
     }
   }
@@ -221,8 +236,8 @@ export async function fetchKnockoutFinals(fetchImpl: typeof fetch = fetch): Prom
         m.score?.fullTime?.away !== null
     )
     .map((m) => ({
-      homeTla: m.homeTeam.tla,
-      awayTla: m.awayTeam.tla,
+      homeTla: canonicalTla(m.homeTeam.tla),
+      awayTla: canonicalTla(m.awayTeam.tla),
       homeScore: m.score.fullTime.home as number,
       awayScore: m.score.fullTime.away as number,
     }));
