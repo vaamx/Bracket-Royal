@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getT } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n/provider";
+import { TrackPageViews } from "@/components/analytics/TrackPageViews";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <TrackPageViews />
         <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>
     </html>
