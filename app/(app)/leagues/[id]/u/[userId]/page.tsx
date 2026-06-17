@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMemberPredictions, type MemberPredItem } from "@/lib/leagues/memberPredictions";
+import { getMemberStanding } from "@/lib/leagues/queries";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { getT } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n";
 
@@ -54,10 +56,15 @@ export default async function MemberPicksPage({ params }: { params: Promise<{ id
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const view = await getMemberPredictions(id, userId, user.id);
+  const [view, standing] = await Promise.all([
+    getMemberPredictions(id, userId, user.id),
+    getMemberStanding(id, userId),
+  ]);
   if (!view) notFound();
 
   const name = view.displayName ?? t.common.guest;
+  const bd = standing.breakdown;
+  const showBreakdown = !!bd && standing.points > 0 && bd.group + bd.ko + bd.scorer === standing.points;
 
   return (
     <main className="mx-auto max-w-md space-y-5 p-6">
@@ -67,6 +74,37 @@ export default async function MemberPicksPage({ params }: { params: Promise<{ id
         <p className="text-xs font-bold tracking-[2px] text-[var(--bn-accent)]">{t.leagues.leaderboard}</p>
         <h1 className="text-2xl font-black">{t.leagues.picksOf(name)}</h1>
         <p className="mt-1 text-xs text-white/45">{t.leagues.lockedNote}</p>
+      </div>
+
+      {/* Standing + how they earned it */}
+      <div className="rounded-2xl border border-[var(--bn-gold)]/25 bg-gradient-to-br from-[var(--bn-gold)]/[0.10] to-transparent p-4">
+        <div className="flex items-center gap-3">
+          <UserAvatar name={name} size={40} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold">{name}</p>
+            <p className="text-xs text-white/45">
+              {standing.rank ? `#${standing.rank}` : "—"} · {t.score.exact}: <span className="tabular-nums">{standing.exactCount}</span>
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-black tabular-nums text-[var(--bn-gold)]">{standing.points}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-white/45">{t.score.points}</p>
+          </div>
+        </div>
+        {showBreakdown && bd && (
+          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/10 pt-3 text-center">
+            {([
+              [t.score.breakGroup, bd.group, "⚽"],
+              [t.score.breakKo, bd.ko, "🏆"],
+              [t.score.breakScorers, bd.scorer, "🥇"],
+            ] as const).map(([label, val, icon]) => (
+              <div key={label}>
+                <p className="text-base font-black tabular-nums">{val}</p>
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-white/45">{icon} {label}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {view.locked.length === 0 ? (
