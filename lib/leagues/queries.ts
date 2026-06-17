@@ -102,6 +102,31 @@ export async function getMyGlobalStanding(): Promise<MyStanding> {
   };
 }
 
+export interface MyBreakdown { group: number; ko: number; scorer: number; }
+
+/**
+ * The signed-in user's GLOBAL points split by source (group / knockout /
+ * scorers). Fault-tolerant: returns null if the breakdown columns aren't
+ * deployed yet (migration 0009) so callers can simply hide the breakdown.
+ */
+export async function getMyGlobalBreakdown(): Promise<MyBreakdown | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: league } = await supabase
+    .from("leagues").select("id").eq("is_global", true).maybeSingle();
+  if (!league) return null;
+  // `as never` keeps the not-yet-in-generated-types columns from failing tsc;
+  // a missing-column DB returns an error, which we treat as "no breakdown".
+  const { data, error } = await supabase
+    .from("league_standings")
+    .select("group_points, ko_points, scorer_points" as never)
+    .eq("league_id", league.id).eq("user_id", user.id).maybeSingle();
+  if (error || !data) return null;
+  const d = data as unknown as { group_points: number | null; ko_points: number | null; scorer_points: number | null };
+  return { group: d.group_points ?? 0, ko: d.ko_points ?? 0, scorer: d.scorer_points ?? 0 };
+}
+
 /** The signed-in user's profile, or null if unauthenticated. */
 export async function getSessionProfile() {
   const supabase = await createClient();

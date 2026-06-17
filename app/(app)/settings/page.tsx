@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/(app)/leagues/actions";
-import { getMyGlobalStanding } from "@/lib/leagues/queries";
+import { getMyGlobalStanding, getMyGlobalBreakdown } from "@/lib/leagues/queries";
 import { getEarnedBadges } from "@/lib/achievements/queries";
 import { getMyDailyWins } from "@/lib/wins/queries";
 import { Card } from "@/components/ui/Card";
@@ -28,7 +28,14 @@ export default async function SettingsPage() {
     name = profile?.display_name ?? t.common.player;
   }
   const subtitle = isAnon ? t.settings.playingGuest : user.email ?? t.settings.signedIn;
-  const [standing, earnedBadges, dailyWins] = await Promise.all([getMyGlobalStanding(), getEarnedBadges(), getMyDailyWins()]);
+  const [standing, breakdown, earnedBadges, dailyWins] = await Promise.all([
+    getMyGlobalStanding(), getMyGlobalBreakdown(), getEarnedBadges(), getMyDailyWins(),
+  ]);
+  // Only show the breakdown once it reconciles with the stored total (i.e. after
+  // migration 0009 + a fresh scoring run) so we never show inconsistent zeros.
+  const showBreakdown =
+    !!breakdown && standing.points > 0 &&
+    breakdown.group + breakdown.ko + breakdown.scorer === standing.points;
 
   return (
     <main className="mx-auto max-w-md space-y-5 p-6">
@@ -57,6 +64,23 @@ export default async function SettingsPage() {
             <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[1px] text-white/45">{t.score.exact}</p>
           </div>
         </div>
+        {showBreakdown && breakdown && (
+          <div className="mt-4 rounded-xl border border-white/10 bg-black/15 p-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[1.5px] text-white/40">{t.score.breakdown}</p>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {([
+                [t.score.breakGroup, breakdown.group, "⚽"],
+                [t.score.breakKo, breakdown.ko, "🏆"],
+                [t.score.breakScorers, breakdown.scorer, "🥇"],
+              ] as const).map(([label, val, icon]) => (
+                <div key={label}>
+                  <p className="text-lg font-black tabular-nums">{val}</p>
+                  <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-white/45">{icon} {label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <p className="mt-3 text-[11px] leading-relaxed text-white/45">
           {standing.points > 0 ? t.score.live : t.score.earnHint}
         </p>

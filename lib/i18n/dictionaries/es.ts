@@ -229,6 +229,10 @@ export const es: Dictionary = {
     live: "La puntuación es en vivo — los puntos se actualizan al terminar los partidos.",
     viewLeaderboard: "Ver tabla →",
     earnHint: "Haz pronósticos para empezar a sumar puntos.",
+    breakdown: "De dónde vienen tus puntos",
+    breakGroup: "Grupos",
+    breakKo: "Eliminatorias",
+    breakScorers: "Goleadores",
   },
   achievements: {
     title: "Logros",
