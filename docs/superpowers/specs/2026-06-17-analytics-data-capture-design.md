@@ -170,12 +170,23 @@ timestamps against `first_seen_at`/`last_seen_at` — not a separate event.)
 4. Hook middleware (session write) and auth callback (`signed_in`).
 5. Add client `page_view` / `start_predicting` pings.
 6. Add `purge-pii` cron + `vercel.json` entry.
-7. Backfill note: existing 451 users have no session/IP history; metrics are
-   forward-looking from deploy. `pick_saved` history can optionally be
-   backfilled from `predictions.updated_at` in the migration.
+7. **Backfill (confirmed):** session rows for existing 451 users have no IP/geo
+   history (forward-looking only), but `pick_saved` / `scorer_saved` events
+   **are** backfilled from existing `predictions` / `scorer_predictions` rows so
+   the funnel isn't empty on day one. Done **carefully**:
+   - Idempotent — guard with a uniqueness key (e.g. partial unique index on
+     `analytics_events(user_id, name, (props->>'match_id'))` for the backfilled
+     event names, or a `not exists` check) so re-running the migration cannot
+     double-insert.
+   - Use `predictions.updated_at` as the event `created_at` (best available
+     timestamp; flag in `props` that the row is backfilled, e.g.
+     `props: {backfilled: true, match_id: ...}`).
+   - `scorer_predictions` has `created_at`; use it directly.
+   - Run as a single set-based `INSERT ... SELECT`, after the trigger is created,
+     so going-forward picks and historical picks use the same event shape.
 
 ## Open questions / product follow-ups
 
-- Consent notice (jurisdiction-dependent) — product decision.
-- Whether to backfill `pick_saved` events from existing `predictions` rows
-  (timestamps exist via `updated_at`; cheap to include in the migration).
+- Consent notice (jurisdiction-dependent) — **product decision, out of build
+  scope** (confirmed).
+- Raw-IP retention window confirmed at **90 days**.
