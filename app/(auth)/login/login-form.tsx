@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { mintGuestClaim } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useI18n } from "@/lib/i18n/provider";
@@ -25,20 +26,24 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const { t } = useI18n();
 
-  const redirectTo =
-    typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
-
   async function sendEmailLink(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    // Guest? Try to link the email to this account first (keeps their picks).
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.is_anonymous) {
+    // If the visitor is an anonymous guest, mint a signed token of their id so
+    // the callback can migrate their picks even if sign-in lands on a different
+    // account. Non-guests get a plain redirect.
+    const guestToken = await mintGuestClaim();
+    const base = `${window.location.origin}/auth/callback`;
+    const redirectTo = guestToken ? `${base}?guest=${encodeURIComponent(guestToken)}` : base;
+
+    if (guestToken) {
+      // Guest: try to upgrade this account in place first (keeps their id).
       const { error: linkErr } = await supabase.auth.updateUser({ email }, { emailRedirectTo: redirectTo });
       if (!linkErr) { setLoading(false); setSent(true); return; }
-      // Email already has an account → fall through to a plain sign-in below.
+      // Email already has an account → fall through; the guest token rides along
+      // so the callback still migrates their picks into that account.
     }
 
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
