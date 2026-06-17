@@ -3,6 +3,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { contextFromHeaders } from "@/lib/analytics/context";
 import { recordSession, recordEvent } from "@/lib/analytics/track";
+import { claimGuestData } from "@/lib/auth/claimGuestData";
 
 /** Best-effort sign-in analytics; never blocks or breaks the redirect. */
 async function logSignIn(request: Request, supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
+  const guest = searchParams.get("guest");
 
   const nextParam = searchParams.get("next") ?? "/predict";
   const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/predict";
@@ -39,12 +41,14 @@ export async function GET(request: Request) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      await claimGuestData(guest, supabase);
       await logSignIn(request, supabase);
       return NextResponse.redirect(`${origin}${next}`);
     }
   } else if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
     if (!error) {
+      await claimGuestData(guest, supabase);
       await logSignIn(request, supabase);
       return NextResponse.redirect(`${origin}${next}`);
     }
