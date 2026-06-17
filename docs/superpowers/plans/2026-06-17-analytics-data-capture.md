@@ -759,8 +759,11 @@ export async function POST(request: Request) {
       ? (body.props as Record<string, unknown>)
       : {};
 
-  await recordSession(user.id, ctx);
-  await recordEvent(user.id, name, props, path);
+  // Independent writes — run concurrently so the per-navigation ping stays fast.
+  await Promise.all([
+    recordSession(user.id, ctx),
+    recordEvent(user.id, name, props, path),
+  ]);
   return NextResponse.json({ ok: true });
 }
 ```
