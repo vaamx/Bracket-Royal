@@ -208,3 +208,9 @@ timestamps against `first_seen_at`/`last_seen_at` — not a separate event.)
 - Consent notice (jurisdiction-dependent) — **product decision, out of build
   scope** (confirmed).
 - Raw-IP retention window confirmed at **90 days**.
+- **Accepted known-minor:** the proxy matcher covers `/api/track`, so a
+  cookieless POST to it mints an anonymous `auth.users` row (the route then
+  204s and writes no analytics). This is a marginal, self-inflicted addition to
+  the inflation metric, of the same class as a bot hitting any page. Owner
+  decision (2026-06-17): accept as-is — `proxy.ts` stays untouched; impact is
+  negligible (bots target pages, not a JSON API).
