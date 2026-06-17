@@ -8,10 +8,14 @@ import { Input } from "@/components/ui/Input";
 import { useI18n } from "@/lib/i18n/provider";
 
 /**
- * Passwordless sign-in. We send a magic link that signs the visitor in if the
- * email already has an account, or creates one if not — so there's no separate
- * "sign up" path and no "already registered" failure. Works the same whether
- * the current session is anonymous or fully signed-out.
+ * Passwordless sign-in that preserves guest progress.
+ *
+ * If the visitor is an anonymous guest, we first try to ATTACH the email to
+ * their current account (updateUser) so the picks they made as a guest carry
+ * over. If that email already belongs to an account — which can't be merged —
+ * we fall back to a normal magic-link sign-in into that existing account.
+ * Either way it's one "email me a link" flow: no separate sign-up, no
+ * "already registered" error.
  */
 export function LoginForm() {
   const supabase = createClient();
@@ -28,10 +32,16 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: redirectTo },
-    });
+
+    // Guest? Try to link the email to this account first (keeps their picks).
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.is_anonymous) {
+      const { error: linkErr } = await supabase.auth.updateUser({ email }, { emailRedirectTo: redirectTo });
+      if (!linkErr) { setLoading(false); setSent(true); return; }
+      // Email already has an account → fall through to a plain sign-in below.
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
     setLoading(false);
     if (error) setError(error.message);
     else setSent(true);
