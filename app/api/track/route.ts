@@ -10,6 +10,14 @@ export const dynamic = "force-dynamic";
 // server-side or by triggers and must never be spoofable from the client.
 const CLIENT_EVENTS = new Set(["page_view", "start_predicting"]);
 
+// Client-supplied path is opaque telemetry; accept only a same-origin-style
+// path, strip the query string, and cap length so a crafted POST can't store
+// garbage or misleading values in analytics_events.path.
+function cleanPath(p: unknown): string | null {
+  if (typeof p !== "string" || !p.startsWith("/") || p.startsWith("//")) return null;
+  return p.split("?")[0].slice(0, 256);
+}
+
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
   try {
@@ -40,8 +48,11 @@ export async function POST(request: Request) {
       content: typeof utm.content === "string" ? utm.content : null,
     };
   }
-  const path = typeof body.path === "string" ? body.path : null;
-  const props = body.props && typeof body.props === "object" ? (body.props as Record<string, unknown>) : {};
+  const path = cleanPath(body.path);
+  const props =
+    body.props && typeof body.props === "object" && !Array.isArray(body.props)
+      ? (body.props as Record<string, unknown>)
+      : {};
 
   await recordSession(user.id, ctx);
   await recordEvent(user.id, name, props, path);
