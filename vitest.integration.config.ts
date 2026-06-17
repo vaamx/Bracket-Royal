@@ -17,5 +17,10 @@ export default defineConfig({
     fileParallelism: false,
     poolOptions: { forks: { singleFork: true } },
   },
-  resolve: { alias: { "@": path.resolve(__dirname, ".") } },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "."),
+      "server-only": path.resolve(__dirname, "test/stubs/server-only.ts"),
+    },
+  },
 });
