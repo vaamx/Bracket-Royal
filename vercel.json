@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/poll-results", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/notify", "schedule": "0 13 * * *" }
+    { "path": "/api/cron/notify", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/purge-pii", "schedule": "0 4 * * *" }
   ]
 }
