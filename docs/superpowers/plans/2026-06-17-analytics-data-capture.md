@@ -228,7 +228,7 @@ Paste the contents of `supabase/PROD_SETUP_0011.sql` into the Supabase SQL edito
 
 Run:
 ```bash
-node --env-file=.env.local -e "const {createClient}=require('@supabase/supabase-js');const a=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});(async()=>{for(const t of ['analytics_sessions','analytics_events']){const r=await a.from(t).select('*',{count:'exact',head:true});console.log(t, r.error?('ERR '+r.error.message):('OK count='+r.count));}const b=await a.from('analytics_events').select('*',{count:'exact',head:true}).eq('name','pick_saved');console.log('backfilled pick_saved count=', b.count);})()"
+node --env-file=.env.local -e "const ws=require('ws');if(!globalThis.WebSocket)globalThis.WebSocket=ws;const {createClient}=require('@supabase/supabase-js');const a=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});(async()=>{for(const t of ['analytics_sessions','analytics_events']){const r=await a.from(t).select('*',{count:'exact',head:true});console.log(t, r.error?('ERR '+r.error.message):('OK count='+r.count));}const b=await a.from('analytics_events').select('*',{count:'exact',head:true}).eq('name','pick_saved');console.log('backfilled pick_saved count=', b.count);})()"
 ```
 Expected: `analytics_sessions OK count=0`, `analytics_events OK count=...`, and `backfilled pick_saved count=` a number > 0 (matches existing predictions, ~497).
 
@@ -236,7 +236,7 @@ Expected: `analytics_sessions OK count=0`, `analytics_events OK count=...`, and 
 
 Run:
 ```bash
-node --env-file=.env.local -e "const {createClient}=require('@supabase/supabase-js');const a=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,{auth:{persistSession:false}});a.from('analytics_sessions').select('id').then(r=>console.log('anon read sessions ->', r.error?('blocked: '+r.error.code):('LEAKED rows='+(r.data?.length))))"
+node --env-file=.env.local -e "const ws=require('ws');if(!globalThis.WebSocket)globalThis.WebSocket=ws;const {createClient}=require('@supabase/supabase-js');const a=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,{auth:{persistSession:false}});a.from('analytics_sessions').select('id').then(r=>console.log('anon read sessions ->', r.error?('blocked: '+r.error.code):('LEAKED rows='+(r.data?.length))))"
 ```
 Expected: `anon read sessions -> blocked: 42501` (permission denied). It must NOT print `LEAKED`.
 
@@ -892,7 +892,7 @@ Route handlers aren't unit-tested in this repo (they depend on the Next request/
 3. Navigate to the predict page.
 4. Confirm rows landed:
 ```bash
-node --env-file=.env.local -e "const {createClient}=require('@supabase/supabase-js');const a=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});(async()=>{const s=await a.from('analytics_sessions').select('utm_source,country,device').order('last_seen_at',{ascending:false}).limit(1);console.log('latest session:', s.data?.[0]);const e=await a.from('analytics_events').select('name').order('created_at',{ascending:false}).limit(5);console.log('recent events:', e.data?.map(x=>x.name));})()"
+node --env-file=.env.local -e "const ws=require('ws');if(!globalThis.WebSocket)globalThis.WebSocket=ws;const {createClient}=require('@supabase/supabase-js');const a=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});(async()=>{const s=await a.from('analytics_sessions').select('utm_source,country,device').order('last_seen_at',{ascending:false}).limit(1);console.log('latest session:', s.data?.[0]);const e=await a.from('analytics_events').select('name').order('created_at',{ascending:false}).limit(5);console.log('recent events:', e.data?.map(x=>x.name));})()"
 ```
 Expected: latest session shows `utm_source: "demo"`; recent events include `page_view` and `start_predicting`. (Locally, `country`/`device` may be null/desktop — Vercel geo headers only exist in deployed environments.)
 
@@ -1143,7 +1143,7 @@ Expected: build succeeds with no type errors.
 
 Run:
 ```bash
-node --env-file=.env.local -e "const {createClient}=require('@supabase/supabase-js');const a=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});(async()=>{const sessions=await a.from('analytics_sessions').select('*',{count:'exact',head:true});const distinctActivated=await a.from('analytics_events').select('user_id',{count:'exact',head:true}).eq('name','pick_saved');console.log('sessions rows:', sessions.count);console.log('pick_saved events:', distinctActivated.count);})()"
+node --env-file=.env.local -e "const ws=require('ws');if(!globalThis.WebSocket)globalThis.WebSocket=ws;const {createClient}=require('@supabase/supabase-js');const a=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});(async()=>{const sessions=await a.from('analytics_sessions').select('*',{count:'exact',head:true});const distinctActivated=await a.from('analytics_events').select('user_id',{count:'exact',head:true}).eq('name','pick_saved');console.log('sessions rows:', sessions.count);console.log('pick_saved events:', distinctActivated.count);})()"
 ```
 Expected: prints non-error counts. `pick_saved` count reflects backfill + any new picks. (Distinct-user and IP-dedup analyses are best run as SQL in the Supabase editor; see the spec's "Metrics unlocked" section.)
 
