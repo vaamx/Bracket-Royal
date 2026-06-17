@@ -231,9 +231,11 @@ describe("claim_guest_data (integration)", () => {
     const { data: g } = await admin.auth.admin.getUserById(guestId);
     expect(g.user).toBeNull();
 
-    // No leftover guest predictions.
+    // No leftover guest predictions or scorer picks.
     const { data: leftovers } = await admin.from("predictions").select("match_id").eq("user_id", guestId);
     expect(leftovers ?? []).toHaveLength(0);
+    const { data: scorerLeftovers } = await admin.from("scorer_predictions").select("player_id").eq("user_id", guestId);
+    expect(scorerLeftovers ?? []).toHaveLength(0);
   });
 });
 ```
