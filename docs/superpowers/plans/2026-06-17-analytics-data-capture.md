@@ -362,7 +362,7 @@ export function hashIp(ip: string, salt: string): string {
 }
 
 const BOT_RE =
-  /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|embedly|preview|headless|monitoring|pingdom|lighthouse|gtmetrix|axios|curl|wget|python-requests|node-fetch/i;
+  /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|embedly|headless|monitoring|pingdom|lighthouse|gtmetrix|axios|curl|wget|python-requests|node-fetch/i;
 
 export function parseUserAgent(ua: string | null): {
   device: AnalyticsContext["device"];
@@ -411,8 +411,10 @@ function safeDecode(v: string | null): string | null {
   }
 }
 
+// Pure: the salt is passed in by the (server-side) caller, never read from
+// process.env here, so this module stays unit-testable in isolation.
 export function contextFromHeaders(headers: Headers, salt?: string): AnalyticsContext {
-  const theSalt = salt ?? process.env.ANALYTICS_IP_SALT ?? "";
+  const theSalt = salt ?? "";
   const fwd = headers.get("x-forwarded-for");
   const ip = (fwd?.split(",")[0]?.trim() || headers.get("x-real-ip") || "").trim() || null;
   const ua = headers.get("user-agent");
@@ -730,7 +732,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return new NextResponse(null, { status: 204 });
 
-  const ctx = contextFromHeaders(request.headers);
+  const ctx = contextFromHeaders(request.headers, process.env.ANALYTICS_IP_SALT);
   if (typeof body.referrer === "string") ctx.referrer = body.referrer;
   if (typeof body.language === "string") ctx.language = body.language;
   const utm = body.utm as Record<string, unknown> | undefined;
@@ -936,7 +938,7 @@ async function logSignIn(request: Request, supabase: Awaited<ReturnType<typeof c
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-    await recordSession(user.id, contextFromHeaders(request.headers));
+    await recordSession(user.id, contextFromHeaders(request.headers, process.env.ANALYTICS_IP_SALT));
     await recordEvent(user.id, "signed_in", {}, "/auth/callback");
   } catch (e) {
     console.error("logSignIn failed:", e instanceof Error ? e.message : e);
