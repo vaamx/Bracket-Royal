@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { GroupPredictor } from "@/components/predict/GroupPredictor";
@@ -20,14 +21,25 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
   const supabase = useMemo(() => createClient(), []);
   const celebrate = useCelebration();
   const { t } = useI18n();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [groups, setGroups] = useState<PredictGroup[]>(initial);
-  const [active, setActive] = useState(0);
+  const labels = useMemo(() => initial.map((g) => g.label), [initial]);
+  // Active group persists in the URL (?g=B) so a reload keeps you where you were.
+  const [active, setActive] = useState(() => Math.max(0, labels.indexOf(searchParams.get("g") ?? "")));
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pending = useRef(0);
 
-  const labels = groups.map((g) => g.label);
+  const selectGroup = useCallback((i: number) => {
+    const clamped = Math.min(Math.max(0, i), labels.length - 1);
+    setActive(clamped);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("g", labels[clamped]);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [labels, pathname, router, searchParams]);
 
   // Per-group progress, recomputed from live client state so it updates as you type.
   // A finished match counts as done (you can't predict it) so it never blocks completion.
@@ -127,7 +139,7 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
         </Link>
       )}
 
-      <GroupStepper labels={labels} active={active} progress={progress} onSelect={setActive} />
+      <GroupStepper labels={labels} active={active} progress={progress} onSelect={selectGroup} />
 
       <div className="flex items-end justify-between">
         <h1 className="text-2xl font-black">{t.predict.group(group.label)}</h1>
@@ -142,10 +154,10 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
       />
 
       <div className="flex justify-between pt-2">
-        <Button variant="ghost" disabled={active === 0} onClick={() => setActive((a) => Math.max(0, a - 1))}>
+        <Button variant="ghost" disabled={active === 0} onClick={() => selectGroup(active - 1)}>
           ← {t.predict.group(labels[Math.max(0, active - 1)])}
         </Button>
-        <Button disabled={active === labels.length - 1} onClick={() => setActive((a) => Math.min(labels.length - 1, a + 1))}>
+        <Button disabled={active === labels.length - 1} onClick={() => selectGroup(active + 1)}>
           {t.predict.group(labels[Math.min(labels.length - 1, active + 1)])} →
         </Button>
       </div>
