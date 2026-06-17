@@ -30,7 +30,8 @@ const STEPPER_ROUNDS = ROUNDS.map((x) => ({ stage: x.stage, label: x.tab }));
 function lockedById(matches: BracketData["matches"]): Record<string, boolean> {
   const out: Record<string, boolean> = {};
   for (const m of matches) {
-    out[m.id] = m.status === "final" || m.status === "live" || (m.lockAt !== null && new Date(m.lockAt).getTime() <= Date.now());
+    // Locks at lock_at (~halftime), not kickoff, so latecomers can still pick.
+    out[m.id] = m.status === "final" || (m.lockAt !== null && new Date(m.lockAt).getTime() <= Date.now());
   }
   return out;
 }

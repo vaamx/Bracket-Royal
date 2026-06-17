@@ -55,6 +55,16 @@ export interface GroupMatchRow {
   winner_team_id: string | null;
 }
 
+/**
+ * Predictions stay open until roughly halftime so people who join late can
+ * still play. This is the lock offset from kickoff — a first half plus typical
+ * stoppage. (DB RLS enforces `now() < lock_at`, so this value is the real gate.)
+ */
+export const HALFTIME_LOCK_MINUTES = 50;
+export function lockAtFor(kickoffISO: string): string {
+  return new Date(new Date(kickoffISO).getTime() + HALFTIME_LOCK_MINUTES * 60_000).toISOString();
+}
+
 /** Map a football-data GROUP_STAGE match to our matches row (id = G{group}-{home}-{away}). */
 export function toGroupMatchRow(m: FdMatch): GroupMatchRow {
   const g = groupLetter(m.group);
@@ -75,7 +85,7 @@ export function toGroupMatchRow(m: FdMatch): GroupMatchRow {
     home_team_id: m.homeTeam.tla,
     away_team_id: m.awayTeam.tla,
     kickoff_at: m.utcDate,
-    lock_at: m.utcDate,
+    lock_at: lockAtFor(m.utcDate),
     status,
     home_score: final ? hs : null,
     away_score: final ? as : null,
@@ -125,7 +135,7 @@ export async function ingestWorldCup(
   const koRows = KNOCKOUT_MATCHES.map((m) => ({
     id: m.id, stage: m.stage, group_label: null, bracket_slot: m.id,
     home_team_id: null, away_team_id: null,
-    kickoff_at: "2026-06-28T18:00:00Z", lock_at: "2026-06-28T18:00:00Z", status: "scheduled" as const,
+    kickoff_at: "2026-06-28T18:00:00Z", lock_at: lockAtFor("2026-06-28T18:00:00Z"), status: "scheduled" as const,
   }));
 
   // Clean slate (local exploration DB) — order respects FKs.
