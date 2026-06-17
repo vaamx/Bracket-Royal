@@ -224,19 +224,22 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
             pickPredictedGoals: sc.pickGoals, actualGoalsByPlayer, config,
           }).points
         : 0;
-      return { league_id: leagueId, user_id: userId, points: group.points + ko.points + scorer, exact_count: group.exactCount };
+      return {
+        league_id: leagueId, user_id: userId,
+        points: group.points + ko.points + scorer, exact_count: group.exactCount,
+        group_points: group.points, ko_points: ko.points, scorer_points: scorer,
+      };
     });
 
     // Competition ranking: sort by points desc; equal points share a rank.
     scored.sort((a, b) => b.points - a.points);
-    const ranked = scored.map((s, i) => ({
+    const ranked: Record<string, unknown>[] = scored.map((s, i) => ({
       ...s,
       rank: scoredRank(scored, i), // standard competition rank (ties share a rank)
       updated_at: now,
     }));
 
-    const { error } = await admin.from("league_standings").upsert(ranked, { onConflict: "league_id,user_id" });
-    if (error) throw error;
+    await upsertStandings(admin, ranked);
     rows += ranked.length;
   }
 
@@ -263,6 +266,22 @@ export async function runScoring(admin: SupabaseClient): Promise<{ leagues: numb
   }
 
   return { leagues: membersByLeague.size, rows };
+}
+
+/**
+ * Upsert standings, tolerating a pre-migration DB that lacks the breakdown
+ * columns (group_points/ko_points/scorer_points): retry without them so
+ * scoring never breaks before migration 0009 is applied.
+ */
+async function upsertStandings(admin: SupabaseClient, ranked: Record<string, unknown>[]): Promise<void> {
+  const { error } = await admin.from("league_standings").upsert(ranked as never, { onConflict: "league_id,user_id" });
+  if (!error) return;
+  const stripped = ranked.map((r) => {
+    const { group_points: _g, ko_points: _k, scorer_points: _s, ...rest } = r;
+    return rest;
+  });
+  const { error: e2 } = await admin.from("league_standings").upsert(stripped as never, { onConflict: "league_id,user_id" });
+  if (e2) throw e2;
 }
 
 /** Standard competition rank: first index of this point total + 1. */

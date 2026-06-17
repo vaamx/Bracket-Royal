@@ -227,6 +227,10 @@ export const en = {
     live: "Scoring is live — points update as real matches finish.",
     viewLeaderboard: "View leaderboard →",
     earnHint: "Make predictions to start earning points.",
+    breakdown: "Where your points come from",
+    breakGroup: "Group",
+    breakKo: "Knockout",
+    breakScorers: "Scorers",
   },
   achievements: {
     title: "Achievements",
