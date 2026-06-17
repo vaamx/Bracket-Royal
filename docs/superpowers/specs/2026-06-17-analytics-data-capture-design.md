@@ -108,29 +108,44 @@ timestamps against `first_seen_at`/`last_seen_at` — not a separate event.)
 
 | Signal | Location | Mechanism |
 |---|---|---|
-| Session row + IP/geo/UA/referrer/UTM | Middleware, **anon-mint branch only** (`middleware.ts:41`) | Write via service role once per new browser — the moment inflation happens; off the hot path (not every request). |
-| `last_seen_at` + `page_view` | Client on load | Lightweight `POST /api/track` ping (return visits derived from these). |
-| `start_predicting` | Predict page / button | `POST /api/track`. |
+| Session row + IP/geo/UA/referrer/UTM + `last_seen_at` | `POST /api/track` (Node route), upsert by `user_id` | Node runtime has `node:crypto` for the salted hash and reads server-trusted IP/geo from request headers. **Middleware (`proxy.ts`) is left unchanged** — it still mints the anon user; a session row is created the first time a JS client pings `/api/track`. The gap between `auth.users` and `analytics_sessions` then itself measures no-JS / bot inflation. |
+| `page_view` (+ derived return visits) | `POST /api/track` from the app layout on each load | Lightweight fire-and-forget. |
+| `start_predicting` | `POST /api/track` from predict-page mount | Funnel step between landing and a saved pick. |
 | `pick_saved` / `scorer_saved` | DB | `AFTER INSERT` trigger on `predictions` / `scorer_predictions` (`security definer`). Bulletproof — picks are saved client-side (`predict-client.tsx:68`, `bracket-client.tsx:85`). |
-| `signed_in` | `app/auth/callback/route.ts` (server) | Captures real sign-in and the anon→real upgrade. |
+| `signed_in` | `app/auth/callback/route.ts` (Node) | Captures real sign-in and the anon→real upgrade (same `user_id`). |
+
+> **Why `/api/track` instead of middleware:** the salted IP hash needs `node:crypto`, which is not guaranteed in the Edge runtime that `proxy.ts` may use; and keeping the critical auth middleware untouched minimizes risk. The trade-off — no-JS clients/bots get an `auth.users` row but no session row — is acceptable and actually useful (the count gap quantifies bot inflation).
 
 ### New / changed code
 
-- `lib/analytics/track.ts` — shared server-side enricher. Reads IP from
-  `x-forwarded-for` / `x-real-ip`, geo from `x-vercel-ip-*`, UA from headers;
-  computes `ip_hash` with `ANALYTICS_IP_SALT`; upserts the session row and/or
-  inserts an event. Uses `createAdminClient()` (`lib/supabase/admin.ts`).
-- `app/api/track/route.ts` — thin Node-runtime endpoint for client-originated
-  events (`page_view`, `start_predicting`, `returned`); delegates to
-  `track.ts`. Resolves the auth user from cookies; never trusts a client-sent
-  user id.
-- `supabase/migrations/0011_analytics.sql` — the two tables, indexes, RLS,
-  triggers, and the retention helper.
-- `lib/supabase/middleware.ts` — ~3-line hook on the anon-mint branch to write
-  the session row.
-- `app/auth/callback/route.ts` — emit `signed_in`.
+- `lib/analytics/context.ts` — **pure** helpers (no DB, no `server-only`):
+  `contextFromHeaders(headers)` parses IP (`x-forwarded-for` / `x-real-ip`),
+  geo (`x-vercel-ip-country` / `-country-region` / `-city`), UA (device /
+  browser / os / is-bot heuristic), referrer, UTM params, language; and
+  `hashIp(ip, salt)` (sha256, `node:crypto`). Unit-testable in isolation.
+- `lib/analytics/track.ts` — `import "server-only"`; server-side writers
+  `recordSession(userId, ctx)` (upsert by `user_id`, refreshing `last_seen_at`
+  and backfilling null geo/UA) and `recordEvent(userId, name, props?, path?)`.
+  Uses `createAdminClient()` (`lib/supabase/admin.ts`).
+- `app/api/track/route.ts` — Node-runtime `POST` endpoint. Resolves the auth
+  user from cookies (never trusts a client-sent id), builds the context from
+  request headers, calls `recordSession` + `recordEvent`. Accepts
+  `{ name, props?, path? }`.
+- `lib/analytics/client.ts` — `"use client"` `track(name, props?)` helper:
+  fire-and-forget `fetch('/api/track', …)`; never throws into the UI.
+- `components/analytics/TrackPageViews.tsx` — client component mounted in the
+  app layout; fires `page_view` on pathname change.
+- `supabase/migrations/0011_analytics.sql` (+ `supabase/PROD_SETUP_0011.sql`,
+  matching the repo's prod-apply convention) — the two tables, indexes, RLS,
+  triggers, and the idempotent backfill.
+- `app/auth/callback/route.ts` — emit `signed_in` after a successful sign-in.
+- `app/(app)/predict/predict-client.tsx` — fire `start_predicting` on mount.
+- `app/(app)/layout.tsx` — mount `<TrackPageViews/>`.
 - `app/api/cron/purge-pii/route.ts` — retention job (below).
 - `vercel.json` — one new cron entry.
+- `.env.example` / `.env.local` — add `ANALYTICS_IP_SALT`.
+
+`proxy.ts` / `lib/supabase/middleware.ts` are **not** modified.
 
 ## Privacy, retention & security
 
@@ -164,11 +179,14 @@ timestamps against `first_seen_at`/`last_seen_at` — not a separate event.)
 
 ## Rollout
 
-1. Apply migration `0011_analytics.sql` (tables, indexes, RLS, triggers).
+1. Apply migration `0011_analytics.sql` (tables, indexes, RLS, triggers) +
+   idempotent backfill.
 2. Add `ANALYTICS_IP_SALT` to env.
-3. Ship `lib/analytics/track.ts` + `app/api/track/route.ts`.
-4. Hook middleware (session write) and auth callback (`signed_in`).
-5. Add client `page_view` / `start_predicting` pings.
+3. Ship `lib/analytics/context.ts`, `lib/analytics/track.ts`,
+   `app/api/track/route.ts`.
+4. Emit `signed_in` from the auth callback.
+5. Add client `page_view` (app layout) + `start_predicting` (predict mount)
+   pings via `lib/analytics/client.ts`.
 6. Add `purge-pii` cron + `vercel.json` entry.
 7. **Backfill (confirmed):** session rows for existing 451 users have no IP/geo
    history (forward-looking only), but `pick_saved` / `scorer_saved` events
