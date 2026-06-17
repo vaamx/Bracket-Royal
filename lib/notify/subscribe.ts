@@ -38,13 +38,12 @@ export async function enablePush(userId: string): Promise<boolean> {
 /** Upsert the user's notification preferences (locale drives transactional email language). */
 export async function savePrefs(userId: string, prefs: { push: boolean; email: boolean; email_addr?: string | null; locale?: string }): Promise<boolean> {
   const supabase = createClient();
-  const base = {
+  const base: Record<string, unknown> = {
     user_id: userId, push_enabled: prefs.push, email_enabled: prefs.email,
     email: prefs.email_addr ?? null, updated_at: new Date().toISOString(),
   };
-  const { error } = await supabase.from("notification_prefs").upsert(
-    prefs.locale ? { ...base, locale: prefs.locale } : base, { onConflict: "user_id" }
-  );
+  const payload: Record<string, unknown> = prefs.locale ? { ...base, locale: prefs.locale } : base;
+  const { error } = await supabase.from("notification_prefs").upsert(payload, { onConflict: "user_id" });
   if (!error) return true;
   // Fallback when the `locale` column isn't deployed yet (migration 0008 pending).
   const { error: e2 } = await supabase.from("notification_prefs").upsert(base, { onConflict: "user_id" });
