@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { useCelebration } from "@/lib/celebrate/useCelebration";
 import type { PredictGroup, PredictMatch } from "@/lib/predictions/types";
 import { useI18n } from "@/lib/i18n/provider";
+import { track } from "@/lib/analytics/client";
 
 const isPicked = (m: PredictMatch) => m.predictedHome !== null && m.predictedAway !== null;
 // A match is "done" for progress when you've predicted it OR it's already been
@@ -32,6 +33,11 @@ export function PredictClient({ groups: initial, userId }: { groups: PredictGrou
   const [saveFailed, setSaveFailed] = useState(false);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pending = useRef(0);
+
+  // Funnel: entering the prediction flow. Fires once per mount.
+  useEffect(() => {
+    track("start_predicting", {});
+  }, []);
 
   const selectGroup = useCallback((i: number) => {
     const clamped = Math.min(Math.max(0, i), labels.length - 1);
