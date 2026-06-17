@@ -1,6 +1,22 @@
 import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { contextFromHeaders } from "@/lib/analytics/context";
+import { recordSession, recordEvent } from "@/lib/analytics/track";
+
+/** Best-effort sign-in analytics; never blocks or breaks the redirect. */
+async function logSignIn(request: Request, supabase: Awaited<ReturnType<typeof createClient>>) {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    await recordSession(user.id, contextFromHeaders(request.headers, process.env.ANALYTICS_IP_SALT));
+    await recordEvent(user.id, "signed_in", {}, "/auth/callback");
+  } catch (e) {
+    console.error("logSignIn failed:", e instanceof Error ? e.message : e);
+  }
+}
 
 /**
  * Completes a sign-in / account-upgrade. Handles both flows:
@@ -22,10 +38,16 @@ export async function GET(request: Request) {
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) {
+      await logSignIn(request, supabase);
+      return NextResponse.redirect(`${origin}${next}`);
+    }
   } else if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) {
+      await logSignIn(request, supabase);
+      return NextResponse.redirect(`${origin}${next}`);
+    }
   }
 
   return NextResponse.redirect(`${origin}/auth/auth-code-error`);
