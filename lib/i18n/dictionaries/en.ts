@@ -232,6 +232,12 @@ export const en = {
     title: "Achievements",
     count: (n: number, total: number) => `${n}/${total} earned`,
   },
+  dailyWins: {
+    title: "Daily Wins",
+    empty: "No medals yet — nail an exact score to earn your first.",
+    kindExact: "Exact score",
+    kindGoals: "Exact goals",
+  },
   badges: {
     bullseye: { label: "Bullseye", desc: "Nailed an exact scoreline" },
     sharpshooter: { label: "Sharpshooter", desc: "5+ exact scorelines" },

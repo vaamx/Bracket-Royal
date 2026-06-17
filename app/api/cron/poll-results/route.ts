@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { runScoring, resolveAndAdvance, applyResults } from "@/lib/scoring/run";
 import { refreshWorldCupResults, fetchKnockoutFinals, knockoutResultsByTeamPair } from "@/lib/feed/ingestWorldCup";
 import { refreshScorerGoals } from "@/lib/feed/ingestPlayers";
+import { awardDailyWins, sendDailyWinDigests } from "@/lib/wins/award";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,15 @@ export async function GET(request: Request) {
 
     try { await refreshScorerGoals(admin); } catch (e) { console.error("scorer refresh failed", e); }
     const scored = await runScoring(admin);
-    return NextResponse.json({ updated, finished, koApplied, ...scored });
+
+    // Daily Wins: award medals for newly-correct predictions and email a digest.
+    let wins = { awarded: 0 }, digests = { sent: 0 };
+    try {
+      wins = await awardDailyWins(admin);
+      digests = await sendDailyWinDigests(admin);
+    } catch (e) { console.error("daily wins failed", e); }
+
+    return NextResponse.json({ updated, finished, koApplied, ...scored, ...wins, digests: digests.sent });
   } catch (e) {
     const message = e instanceof Error ? e.message : "poll failed";
     console.error("poll-results failed:", message);
