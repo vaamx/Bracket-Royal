@@ -7,7 +7,7 @@ describe("notification templates", () => {
   it("push payload has a title, body, and a deep link to /predict", () => {
     const p = lockReminderPush(match);
     expect(p.title).toMatch(/Mexico.*Belgium/);
-    expect(p.body.toLowerCase()).toContain("lock");
+    expect(p.body.toLowerCase()).toContain("prediction");
     expect(p.url).toBe("/predict");
   });
 

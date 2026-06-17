@@ -199,27 +199,27 @@ create policy "own achievements readable"
   using (user_id = auth.uid());
 
 -- predictions: a user reads only their own; may write only their own AND only
--- before the match locks. (UI arrives in Plan 3; the security model belongs here.)
+-- until the match is final (open until full-time — see 0010_open_until_final.sql).
 create policy "own predictions readable"
   on public.predictions for select to authenticated
   using (user_id = auth.uid());
-create policy "own predictions insertable before lock"
+create policy "own predictions insertable until final"
   on public.predictions for insert to authenticated
   with check (
     user_id = auth.uid()
     and exists (
       select 1 from public.matches m
-      where m.id = match_id and (m.lock_at is null or now() < m.lock_at)
+      where m.id = match_id and m.status <> 'final'
     )
   );
-create policy "own predictions updatable before lock"
+create policy "own predictions updatable until final"
   on public.predictions for update to authenticated
   using (user_id = auth.uid())
   with check (
     user_id = auth.uid()
     and exists (
       select 1 from public.matches m
-      where m.id = match_id and (m.lock_at is null or now() < m.lock_at)
+      where m.id = match_id and m.status <> 'final'
     )
   );
 

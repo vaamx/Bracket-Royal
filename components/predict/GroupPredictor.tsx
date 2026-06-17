@@ -8,10 +8,10 @@ import type { PredictGroup, PredictMatch } from "@/lib/predictions/types";
 import { useI18n } from "@/lib/i18n/provider";
 
 export function isLocked(m: PredictMatch): boolean {
-  // Locks at lock_at (~halftime), not at kickoff — so a first-half live match
-  // stays editable for latecomers. `final` is the backstop.
-  if (m.status === "final") return true;
-  return m.lockAt !== null && new Date(m.lockAt).getTime() <= Date.now();
+  // Open until full-time: a prediction stays editable any time before the match
+  // is final — including while it's live — so no in-progress game can block you.
+  // Once the match finishes the real result is known, so it locks.
+  return m.status === "final";
 }
 
 /**
