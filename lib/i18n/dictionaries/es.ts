@@ -234,6 +234,12 @@ export const es: Dictionary = {
     title: "Logros",
     count: (n: number, total: number) => `${n}/${total} conseguidos`,
   },
+  dailyWins: {
+    title: "Victorias del día",
+    empty: "Aún sin medallas — acierta un marcador exacto para ganar la primera.",
+    kindExact: "Marcador exacto",
+    kindGoals: "Goles exactos",
+  },
   badges: {
     bullseye: { label: "Diana", desc: "Acertaste un marcador exacto" },
     sharpshooter: { label: "Francotirador", desc: "5+ marcadores exactos" },

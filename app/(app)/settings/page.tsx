@@ -4,9 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/(app)/leagues/actions";
 import { getMyGlobalStanding } from "@/lib/leagues/queries";
 import { getEarnedBadges } from "@/lib/achievements/queries";
+import { getMyDailyWins } from "@/lib/wins/queries";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { TrophyCase } from "@/components/ui/TrophyCase";
+import { DailyWinsCard } from "@/components/ui/DailyWinsCard";
 import { getT } from "@/lib/i18n";
 import { NameEditor } from "@/components/settings/NameEditor";
 import { SettingsClient } from "./settings-client";
@@ -26,7 +28,7 @@ export default async function SettingsPage() {
     name = profile?.display_name ?? t.common.player;
   }
   const subtitle = isAnon ? t.settings.playingGuest : user.email ?? t.settings.signedIn;
-  const [standing, earnedBadges] = await Promise.all([getMyGlobalStanding(), getEarnedBadges()]);
+  const [standing, earnedBadges, dailyWins] = await Promise.all([getMyGlobalStanding(), getEarnedBadges(), getMyDailyWins()]);
 
   return (
     <main className="mx-auto max-w-md space-y-5 p-6">
@@ -61,6 +63,10 @@ export default async function SettingsPage() {
         <Link href="/leagues" className="mt-3 inline-block text-sm font-bold text-[var(--bn-gold)]">
           {t.score.viewLeaderboard}
         </Link>
+      </Card>
+
+      <Card>
+        <DailyWinsCard wins={dailyWins} />
       </Card>
 
       <Card>

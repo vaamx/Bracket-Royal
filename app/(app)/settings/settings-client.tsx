@@ -23,7 +23,7 @@ export function SettingsClient({
   // after mount so SSR and first client render agree (no hydration mismatch).
   const [pushOk, setPushOk] = useState<boolean | null>(null);
   useEffect(() => setPushOk(pushSupported()), []);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   async function togglePush() {
     if (!push) {
@@ -32,13 +32,13 @@ export function SettingsClient({
     }
     const next = !push;
     setPush(next);
-    await savePrefs(userId, { push: next, email, email_addr: addr || null });
+    await savePrefs(userId, { push: next, email, email_addr: addr || null, locale });
     setStatus(t.settings.saved);
   }
 
   async function saveEmail() {
     setEmail(true);
-    await savePrefs(userId, { push, email: true, email_addr: addr || null });
+    await savePrefs(userId, { push, email: true, email_addr: addr || null, locale });
     setStatus(t.settings.saved);
   }
 
