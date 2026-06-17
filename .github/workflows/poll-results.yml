@@ -1,0 +1,28 @@
+name: Poll WC results
+
+# Near-real-time results refresh. Vercel Hobby caps crons at daily, so we drive
+# the poll-results endpoint from GitHub Actions every 5 minutes instead.
+# GitHub may delay scheduled runs under load; for strict timing use an external
+# pinger (e.g. cron-job.org) hitting the same URL.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+# Don't pile up overlapping runs if one is slow.
+concurrency:
+  group: poll-results
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger poll-results
+        run: |
+          curl -sS --fail-with-body -X GET \
+            "${POLL_URL:-https://bracket-royal.vercel.app/api/cron/poll-results}" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          POLL_URL: ${{ vars.POLL_URL }}
