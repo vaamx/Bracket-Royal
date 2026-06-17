@@ -25,7 +25,9 @@ export interface MemberPredView {
 }
 
 function isLocked(m: { status: string; lock_at: string | null }, now: number): boolean {
-  return m.status === "final" || m.status === "live" || (m.lock_at !== null && new Date(m.lock_at).getTime() <= now);
+  // Lock (and reveal) at lock_at (~halftime) — NOT at kickoff — so latecomers
+  // can still predict during the first half. `final` is a safety backstop.
+  return m.status === "final" || (m.lock_at !== null && new Date(m.lock_at).getTime() <= now);
 }
 
 /**
