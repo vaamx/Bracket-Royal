@@ -51,7 +51,7 @@ have 0 picks — consistent with conversions that didn't carry data over.
 |---|---|
 | Conflict on a match both sides predicted | **Account keeps its own** (non-destructive merge; guest pick discarded). |
 | How the old anon id reaches the callback | **HMAC-signed token** carried in `emailRedirectTo`, minted by a server action, verified server-side. |
-| Migration scope | `predictions` + `scorer_predictions` + **private** `league_members` (skip global league; derived data recomputed). |
+| Migration scope | `predictions` + `scorer_predictions` + **private** `league_members` + **ownership of private leagues the guest created** (skip global league; derived data recomputed). |
 | Happy path | Keep the in-place `updateUser` upgrade; migration is a **no-op when ids match**. |
 
 ## Architecture
@@ -106,9 +106,15 @@ Behavior:
 - **scorer_predictions:** same, keyed on `player_id`.
 - **league_members:** insert guest's non-global memberships for `p_new_user`
   (`on conflict do nothing`).
+- **Owned leagues:** `update leagues set owner_id = p_new_user where owner_id =
+  p_guest_id` — the guest keeps any private league they created. This is also
+  **required for correctness**: `leagues.owner_id → profiles(id)` has no
+  `ON DELETE` action (RESTRICT), and `profiles.id → auth.users(id)` cascades, so
+  deleting a guest who owns a league would otherwise fail the FK and abort the
+  whole claim. (The global league has `owner_id = null`, so it's never touched.)
 - **Cleanup:** `delete from auth.users where id = p_guest_id and is_anonymous`
-  — cascades away the emptied guest's profile, leftover memberships, and any
-  analytics rows, and de-inflates the user count.
+  — cascades away the emptied guest's profile, leftover predictions/memberships,
+  and any analytics rows, and de-inflates the user count.
 
 Grants: `set search_path = public`; execute revoked from `public, anon,
 authenticated`, granted only to `service_role`. Mirrored to
