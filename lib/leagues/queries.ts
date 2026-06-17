@@ -127,6 +127,42 @@ export async function getMyGlobalBreakdown(): Promise<MyBreakdown | null> {
   return { group: d.group_points ?? 0, ko: d.ko_points ?? 0, scorer: d.scorer_points ?? 0 };
 }
 
+export interface MemberStanding {
+  points: number;
+  rank: number | null;
+  exactCount: number;
+  breakdown: MyBreakdown | null;
+}
+
+/**
+ * A given member's standing in a league (points / rank / exact + per-source
+ * breakdown), for the teammate detail page. RLS allows reading standings of
+ * leagues you belong to. Breakdown is fault-tolerant (null pre-migration 0009).
+ */
+export async function getMemberStanding(leagueId: string, userId: string): Promise<MemberStanding> {
+  const supabase = await createClient();
+  const { data: base } = await supabase
+    .from("league_standings").select("points, rank, exact_count")
+    .eq("league_id", leagueId).eq("user_id", userId).maybeSingle();
+
+  let breakdown: MyBreakdown | null = null;
+  const { data: bd, error } = await supabase
+    .from("league_standings")
+    .select("group_points, ko_points, scorer_points" as never)
+    .eq("league_id", leagueId).eq("user_id", userId).maybeSingle();
+  if (!error && bd) {
+    const d = bd as unknown as { group_points: number | null; ko_points: number | null; scorer_points: number | null };
+    breakdown = { group: d.group_points ?? 0, ko: d.ko_points ?? 0, scorer: d.scorer_points ?? 0 };
+  }
+
+  return {
+    points: base?.points ?? 0,
+    rank: base?.rank ?? null,
+    exactCount: base?.exact_count ?? 0,
+    breakdown,
+  };
+}
+
 /** The signed-in user's profile, or null if unauthenticated. */
 export async function getSessionProfile() {
   const supabase = await createClient();
