@@ -46,4 +46,8 @@ describe("contextFromHeaders", () => {
   it("yields null ipHash when no IP", () => {
     expect(contextFromHeaders(new Headers(), "salt").ipHash).toBeNull();
   });
+  it("yields null ipHash when salt is omitted, even with an IP present", () => {
+    const h = new Headers({ "x-forwarded-for": "9.9.9.9" });
+    expect(contextFromHeaders(h).ipHash).toBeNull();
+  });
 });
